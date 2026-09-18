@@ -1,69 +1,130 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+/**
+ * Página Index / Inicio: http://localhost:3000/
+ * 
+ * En Next.js (App Router), 'app/page.tsx' es la página principal (la raíz '/').
+ * Como mencionaste que primero deben iniciar sesión para acceder al dashboard,
+ * esta pantalla actúa como el portal de acceso y bienvenida.
+ */
+export default function PaginaInicio() {
+  const router = useRouter();
+  const [correo, setCorreo] = useState("");
+  const [contrasena, setContrasena] = useState("");
+  const [esModoOscuro, setEsModoOscuro] = useState(false);
+
+  // Sincroniza la clase dark-theme en el <body>
+  useEffect(() => {
+    if (esModoOscuro) {
+      document.body.classList.add("dark-theme");
+    } else {
+      document.body.classList.remove("dark-theme");
+    }
+  }, [esModoOscuro]);
+
+  // Manejador del envío del formulario de login
+  const manejarLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Aquí puedes conectar tu API de autenticación real.
+    // Una vez autenticado, redirigimos al usuario al dashboard:
+    router.push("/dashboard");
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen flex flex-col justify-between p-6 transition-colors duration-300">
+      {/* Barra superior con selector de tema */}
+      <header className="flex justify-between items-center max-w-5xl w-full mx-auto">
+        <div className="brand-container mb-0">
+          <div className="brand-logo-icon">C</div>
+          <span className="brand-name">coinstellation</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <button
+          type="button"
+          onClick={() => setEsModoOscuro(!esModoOscuro)}
+          className="header-action-btn"
+          aria-label="Cambiar tema"
+          title={esModoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        >
+          <i className={esModoOscuro ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
+        </button>
+      </header>
+
+      {/* Tarjeta Central de Inicio de Sesión */}
+      <main className="flex-1 flex items-center justify-center my-8">
+        <div className="panel w-full max-w-md shadow-lg">
+          <div className="text-center mb-6">
+            <h1 className="page-title text-2xl mb-1">Bienvenido a Coinstellation</h1>
+            <p className="page-subtitle">Ingresa tus credenciales para acceder al panel</p>
+          </div>
+
+          <form onSubmit={manejarLogin} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1 text-left">
+              <label
+                htmlFor="correo"
+                className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
+              >
+                Usuario o Correo
+              </label>
+              <input
+                id="correo"
+                type="text"
+                placeholder="admin@coinstellation.com"
+                value={correo}
+                onChange={(e) => setCorreo(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 text-left">
+              <label
+                htmlFor="contrasena"
+                className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
+              >
+                Contraseña
+              </label>
+              <input
+                id="contrasena"
+                type="password"
+                placeholder="••••••••"
+                value={contrasena}
+                onChange={(e) => setContrasena(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="mt-2 w-full py-3 px-4 rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-sm transition-all shadow cursor-pointer"
+            >
+              Iniciar Sesión y Entrar al Dashboard
+            </button>
+          </form>
+
+          {/* Enlace directo rápido para desarrollo */}
+          <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] text-center">
+            <p className="text-xs text-[var(--text-muted)] mb-2">
+              ¿Quieres ir directamente al panel durante el desarrollo?
+            </p>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] hover:underline"
+            >
+              Abrir Dashboard directamente (/dashboard)
+              <i className="fa-solid fa-arrow-right text-[10px]"></i>
+            </Link>
+          </div>
         </div>
       </main>
+
+      {/* Pie de página */}
+      <footer className="text-center text-xs text-[var(--text-muted)] py-4">
+        Coinstellation Platform © {new Date().getFullYear()} — Todos los derechos reservados.
+      </footer>
     </div>
   );
 }
