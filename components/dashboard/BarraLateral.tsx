@@ -25,7 +25,8 @@ const SECCIONES_MENU: SeccionMenu[] = [
   {
     titulo: "PLATFORM",
     elementos: [
-      { id: "panel-control", etiqueta: "Panel de Control", icono: "fa-solid fa-gauge-high" },
+      { id: "dashboard", etiqueta: "Dashboard", icono: "fa-solid fa-gauge-high" },
+      { id: "paquetes", etiqueta: "Paquetes", icono: "fa-solid fa-box-archive" },
       { id: "nodos-servidor", etiqueta: "Nodos del Servidor", icono: "fa-solid fa-server" },
       { id: "analiticas", etiqueta: "Analiticas", icono: "fa-solid fa-chart-line" },
       { id: "casa-subastas", etiqueta: "Casa de Subastas", icono: "fa-solid fa-gavel" },
@@ -45,14 +46,8 @@ const SECCIONES_MENU: SeccionMenu[] = [
 export default function BarraLateral({ seccionActiva, alSeleccionarSeccion }: BarraLateralProps) {
   return (
     <aside className="sidebar">
-      {/* Marca Superior / Logotipo */}
-      <div className="brand-container">
-        <div className="brand-logo-icon">C</div>
-        <span className="brand-name">coinstellation</span>
-      </div>
-
       {/* Contenedor de Secciones en la Barra Lateral */}
-      <div className="sidebar-nav-wrapper">
+      <div className="sidebar-nav-wrapper !mt-0">
         {SECCIONES_MENU.map((seccion) => (
           <div key={seccion.titulo} className="sidebar-section">
             <div className="sidebar-section-title">{seccion.titulo}</div>

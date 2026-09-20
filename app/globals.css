@@ -99,9 +99,15 @@ body {
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 32px 14px;
+  padding: 24px 14px;
   flex-shrink: 0;
   transition: background-color 0.3s ease, border-color 0.3s ease;
+  position: sticky;
+  top: 55px;
+  height: calc(100vh - 55px);
+  overflow-y: auto;
+  align-self: flex-start;
+  z-index: 30;
 }
 
 .brand-container {

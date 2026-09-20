@@ -9,6 +9,8 @@ type UserRequestBody = {
   name?: unknown;
   email?: unknown;
   password?: unknown;
+  confirmPassword?: unknown;
+  termsAccepted?: unknown;
 };
 
 function toPublicUser(user: User) {
@@ -34,7 +36,7 @@ export async function GET(request: Request) {
 
   if (!id) {
     return Response.json(
-      { error: "The user id is required." },
+      { error: "El ID de usuario es obligatorio." },
       { status: 400 },
     );
   }
@@ -42,7 +44,7 @@ export async function GET(request: Request) {
   const user = await getUserById(id);
 
   if (!user) {
-    return Response.json({ error: "User not found." }, { status: 404 });
+    return Response.json({ error: "Usuario no encontrado." }, { status: 404 });
   }
 
   return Response.json({ user: toPublicUser(user) });
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
 /**
  * POST /api/users
  *
- * Para registrar, enviar: { name, email, password }
+ * Para registrar, enviar: { name, email, password, confirmPassword?, termsAccepted? }
  * Para loguear, enviar: { email, password }
  */
 export async function POST(request: Request) {
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
     body = parsedBody as UserRequestBody;
   } catch {
     return Response.json(
-      { error: "Body must be a valid JSON object." },
+      { error: "El cuerpo de la solicitud debe ser un objeto JSON válido." },
       { status: 400 },
     );
   }
@@ -75,10 +77,11 @@ export async function POST(request: Request) {
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
 
+  // Flujo de Inicio de Sesión (Login)
   if (body.name === undefined) {
     if (!email || !password) {
       return Response.json(
-        { error: "email and password are required." },
+        { error: "El correo y la contraseña son obligatorios." },
         { status: 422 },
       );
     }
@@ -87,7 +90,7 @@ export async function POST(request: Request) {
 
     if (!user) {
       return Response.json(
-        { error: "Invalid email or password." },
+        { error: "Correo o contraseña incorrectos." },
         { status: 401 },
       );
     }
@@ -95,25 +98,51 @@ export async function POST(request: Request) {
     return Response.json({ user: toPublicUser(user) });
   }
 
+  // Flujo de Registro (Register)
   const name = typeof body.name === "string" ? body.name.trim() : "";
+  const confirmPassword = typeof body.confirmPassword === "string" ? body.confirmPassword : "";
+  const termsAccepted = body.termsAccepted === true;
 
   if (!name || !email || !password) {
     return Response.json(
-      { error: "name, email and password are required." },
+      { error: "El nombre, correo y contraseña son obligatorios." },
       { status: 422 },
     );
   }
 
   if (name.length < 2) {
     return Response.json(
-      { error: "The name must have at least 2 characters." },
+      { error: "El nombre debe tener al menos 2 caracteres." },
       { status: 422 },
     );
   }
 
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return Response.json(
-      { error: "The email does not have a valid format." },
+      { error: "El correo electrónico no tiene un formato válido." },
+      { status: 422 },
+    );
+  }
+
+  if (password.length < 6) {
+    return Response.json(
+      { error: "La contraseña debe tener al menos 6 caracteres." },
+      { status: 422 },
+    );
+  }
+
+  // Validación de confirmación de contraseña si fue enviada
+  if (body.confirmPassword !== undefined && password !== confirmPassword) {
+    return Response.json(
+      { error: "Las contraseñas no coinciden." },
+      { status: 422 },
+    );
+  }
+
+  // Validación de mayoría de edad y términos
+  if (body.termsAccepted !== undefined && !termsAccepted) {
+    return Response.json(
+      { error: "Debes confirmar que tienes al menos 18 años y aceptar los términos y la política de privacidad." },
       { status: 422 },
     );
   }
@@ -124,11 +153,11 @@ export async function POST(request: Request) {
   } catch (error) {
     if (error instanceof Error && error.message.includes("already exists")) {
       return Response.json(
-        { error: "A user with that email already exists." },
+        { error: "Ya existe un usuario registrado con ese correo electrónico." },
         { status: 409 },
       );
     }
 
-    return Response.json({ error: "Could not register the user." }, { status: 500 });
+    return Response.json({ error: "No se pudo registrar al usuario." }, { status: 500 });
   }
 }
