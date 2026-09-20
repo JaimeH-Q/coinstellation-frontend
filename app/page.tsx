@@ -2,19 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 /**
- * Página Index / Inicio: http://localhost:3000/
- * 
- * En Next.js (App Router), 'app/page.tsx' es la página principal (la raíz '/').
- * Como mencionaste que primero deben iniciar sesión para acceder al dashboard,
- * esta pantalla actúa como el portal de acceso y bienvenida.
+ * Página Principal / Landing Page: http://localhost:3000/
+ *
+ * Espacio reservado para la Landing Page de inicio.
+ * El login ha sido trasladado a '/login'.
  */
 export default function PaginaInicio() {
-  const router = useRouter();
-  const [correo, setCorreo] = useState("");
-  const [contrasena, setContrasena] = useState("");
   const [esModoOscuro, setEsModoOscuro] = useState(false);
 
   // Sincroniza la clase dark-theme en el <body>
@@ -26,97 +21,79 @@ export default function PaginaInicio() {
     }
   }, [esModoOscuro]);
 
-  // Manejador del envío del formulario de login
-  const manejarLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Aquí puedes conectar tu API de autenticación real.
-    // Una vez autenticado, redirigimos al usuario al dashboard:
-    router.push("/dashboard");
-  };
-
   return (
     <div className="min-h-screen flex flex-col justify-between p-6 transition-colors duration-300">
-      {/* Barra superior con selector de tema */}
+      {/* Barra de navegación superior */}
       <header className="flex justify-between items-center max-w-5xl w-full mx-auto">
         <div className="brand-container mb-0">
           <div className="brand-logo-icon">C</div>
           <span className="brand-name">coinstellation</span>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setEsModoOscuro(!esModoOscuro)}
-          className="header-action-btn"
-          aria-label="Cambiar tema"
-          title={esModoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-        >
-          <i className={esModoOscuro ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="px-4 py-2 text-xs font-bold rounded-lg border border-[var(--border-color)] text-[var(--text-primary)] hover:bg-[var(--bg-card)] transition-colors"
+          >
+            Iniciar Sesión
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className="px-4 py-2 text-xs font-bold rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white transition-opacity shadow"
+          >
+            Dashboard
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setEsModoOscuro(!esModoOscuro)}
+            className="header-action-btn ml-1"
+            aria-label="Cambiar tema"
+            title={esModoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          >
+            <i className={esModoOscuro ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
+          </button>
+        </div>
       </header>
 
-      {/* Tarjeta Central de Inicio de Sesión */}
-      <main className="flex-1 flex items-center justify-center my-8">
-        <div className="panel w-full max-w-md shadow-lg">
-          <div className="text-center mb-6">
-            <h1 className="page-title text-2xl mb-1">Bienvenido a Coinstellation</h1>
-            <p className="page-subtitle">Ingresa tus credenciales para acceder al panel</p>
+      {/* Hero / Presentación temporal mientras se integra la landing */}
+      <main className="flex-1 flex items-center justify-center my-12">
+        <div className="panel max-w-xl text-center p-8 sm:p-12 shadow-lg">
+          <div className="brand-logo-icon mx-auto mb-4 !w-16 !h-16 !text-2xl">
+            C
           </div>
 
-          <form onSubmit={manejarLogin} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1 text-left">
-              <label
-                htmlFor="correo"
-                className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
-              >
-                Usuario o Correo
-              </label>
-              <input
-                id="correo"
-                type="text"
-                placeholder="admin@coinstellation.com"
-                value={correo}
-                onChange={(e) => setCorreo(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
-              />
-            </div>
+          <h1 className="page-title text-3xl sm:text-4xl mb-3">
+            Coinstellation
+          </h1>
 
-            <div className="flex flex-col gap-1 text-left">
-              <label
-                htmlFor="contrasena"
-                className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
-              >
-                Contraseña
-              </label>
-              <input
-                id="contrasena"
-                type="password"
-                placeholder="••••••••"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
-              />
-            </div>
+          <p className="page-subtitle text-base max-w-md mx-auto mb-8">
+            Plataforma de monitoreo y gestión de ecosistema descentralizado en tiempo real.
+          </p>
 
-            <button
-              type="submit"
-              className="mt-2 w-full py-3 px-4 rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-sm transition-all shadow cursor-pointer"
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link
+              href="/login"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-sm transition-all shadow flex items-center justify-center gap-2"
             >
-              Iniciar Sesión y Entrar al Dashboard
-            </button>
-          </form>
+              <i className="fa-solid fa-right-to-bracket text-xs"></i>
+              Acceder al Login (/login)
+            </Link>
 
-          {/* Enlace directo rápido para desarrollo */}
-          <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] text-center">
-            <p className="text-xs text-[var(--text-muted)] mb-2">
-              ¿Quieres ir directamente al panel durante el desarrollo?
-            </p>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] hover:underline"
+              className="w-full sm:w-auto px-6 py-3 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] hover:bg-[var(--bg-card)] font-bold text-sm transition-colors flex items-center justify-center gap-2"
             >
-              Abrir Dashboard directamente (/dashboard)
-              <i className="fa-solid fa-arrow-right text-[10px]"></i>
+              <i className="fa-solid fa-gauge-high text-xs"></i>
+              Ir al Dashboard (/dashboard)
             </Link>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-[var(--border-subtle)] text-xs text-[var(--text-muted)]">
+            <p>
+              ℹ️ <strong>Ruta raíz (/) lista:</strong> Aquí tu compañera puede montar directamente su Landing Page de inicio.
+            </p>
           </div>
         </div>
       </main>

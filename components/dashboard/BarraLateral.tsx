@@ -42,14 +42,6 @@ const SECCIONES_MENU: SeccionMenu[] = [
   },
 ];
 
-/**
- * Componente BarraLateral (Sidebar)
- * 
- * ¿Cómo funciona en React?
- * - En lugar de repetir enlaces HTML estáticos, usamos un array (`SECCIONES_MENU`) y la función `.map()`.
- * - Manejamos el enlace activo comparando `seccionActiva === elemento.id`.
- * - Cuando el usuario hace clic, ejecutamos la función `alSeleccionarSeccion` (recibida por props).
- */
 export default function BarraLateral({ seccionActiva, alSeleccionarSeccion }: BarraLateralProps) {
   return (
     <aside className="sidebar">
