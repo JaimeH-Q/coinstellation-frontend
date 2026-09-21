@@ -94,7 +94,7 @@ export default function NavbarSuperior({
       <div className="flex items-center justify-between gap-4 min-h-[38px]">
         {/* Lado izquierdo: Logo y texto Coinstellation centrados verticalmente */}
         <div className="flex items-center">
-          <Link href="/" className="brand-container mb-0 cursor-pointer hover:opacity-90 transition-opacity flex items-center gap-2.5">
+          <Link href="/" className="brand-container !mb-0 cursor-pointer hover:opacity-90 transition-opacity flex items-center gap-2.5 my-auto">
             <div className="brand-logo-icon">C</div>
             <span className="brand-name">coinstellation</span>
           </Link>
@@ -151,7 +151,7 @@ export default function NavbarSuperior({
             onClick={() => alSeleccionarSeccion("proyectos")}
             className={`px-3.5 py-1.5 h-9 rounded-[4px] border text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center ${
               seccionActiva === "proyectos"
-                ? "bg-[var(--accent-gray)] text-white border-[var(--accent-gray)]"
+                ? "bg-[#095a86] text-white border-[#095a86]"
                 : "border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]"
             }`}
           >
@@ -164,7 +164,7 @@ export default function NavbarSuperior({
             onClick={() => alSeleccionarSeccion("billetera")}
             className={`px-3.5 py-1.5 h-9 rounded-[4px] border text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center ${
               seccionActiva === "billetera"
-                ? "bg-[var(--accent-gray)] text-white border-[var(--accent-gray)]"
+                ? "bg-[#095a86] text-white border-[#095a86]"
                 : "border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[var(--text-primary)]"
             }`}
           >
@@ -183,7 +183,7 @@ export default function NavbarSuperior({
               aria-haspopup="true"
               aria-expanded={menuUsuarioAbierto}
             >
-              <div className="w-6 h-6 rounded-[3px] bg-[var(--accent-gray)] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+              <div className="w-6 h-6 rounded-[3px] bg-[#095a86] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                 {iniciales}
               </div>
               <span className="max-w-[120px] truncate">{nombreUsuario}</span>

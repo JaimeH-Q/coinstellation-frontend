@@ -353,7 +353,7 @@ export default function SeccionPaquetes() {
             <button
               type="button"
               onClick={() => setMenuAnadirAbierto(!menuAnadirAbierto)}
-              className="px-4 py-2 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs shadow-xs cursor-pointer transition-all flex items-center gap-2"
+              className="px-4 py-2 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow-xs cursor-pointer transition-colors flex items-center gap-2"
             >
               <i className="fa-solid fa-plus text-xs"></i>
               <span>Añadir nuevo</span>
@@ -417,7 +417,7 @@ export default function SeccionPaquetes() {
               <button
                 type="button"
                 onClick={() => abrirCrearCategoria()}
-                className="px-4 py-2 rounded-[4px] bg-[var(--accent-gray)] text-white text-xs font-bold cursor-pointer hover:opacity-90 transition-opacity"
+                className="px-4 py-2 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white text-xs font-bold cursor-pointer transition-colors"
               >
                 Crear Primera Categoría
               </button>
@@ -735,7 +735,7 @@ export default function SeccionPaquetes() {
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs shadow cursor-pointer transition-opacity flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-plus text-xs"></i>
                 <span>Crear Paquete</span>
@@ -865,7 +865,7 @@ export default function SeccionPaquetes() {
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs shadow cursor-pointer transition-opacity flex items-center justify-center gap-2"
+                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-check text-xs"></i>
                 <span>Crear Categoría</span>

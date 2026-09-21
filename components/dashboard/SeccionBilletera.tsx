@@ -41,7 +41,7 @@ export default function SeccionBilletera() {
           <div className="flex items-center gap-3 mt-6">
             <button
               type="button"
-              className="py-2.5 px-4 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs transition-opacity cursor-pointer flex items-center gap-2 shadow-xs"
+              className="py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
             >
               <i className="fa-solid fa-arrow-down text-xs"></i>
               <span>Depositar Fondos</span>

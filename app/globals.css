@@ -24,8 +24,8 @@
   --text-light: #cbd5e1;
 
   /* Acentos y Estados */
-  --accent-gray: #475569;
-  --accent-light: #f8fafc;
+  --accent-gray: #095a86;
+  --accent-light: #f0f7fb;
 
   --badge-high-bg: #fef2f2;
   --badge-high-text: #ef4444;
@@ -60,8 +60,8 @@ body.dark-theme {
   --text-muted: #6b7280;
   --text-light: #4b5563;
 
-  --accent-gray: #94a3b8;
-  --accent-light: #1f2937;
+  --accent-gray: #095a86;
+  --accent-light: #0d2838;
 
   --badge-high-bg: #451a1a;
   --badge-high-text: #f87171;
@@ -112,10 +112,10 @@ body {
 }
 
 .brand-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
   padding-left: 4px;
 }
 
@@ -124,12 +124,14 @@ body {
   height: 22px;
   border-radius: 6px;
   background: var(--accent-gray);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 800;
   font-size: 11px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .brand-name {
@@ -137,6 +139,9 @@ body {
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: -0.02em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
 }
 
 .sidebar-nav-wrapper {
@@ -376,6 +381,20 @@ body.dark-theme .stat-card:hover {
   grid-template-columns: 1fr 340px;
   gap: 24px;
   align-items: start;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 370px;
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 28px;
+}
+
+@media (max-width: 1100px) {
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .panel {

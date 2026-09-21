@@ -177,7 +177,7 @@ export default function SeccionProyectos() {
         <button
           type="button"
           onClick={() => router.push("/proyectos/crear")}
-          className="px-4 py-2 h-9 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white text-xs font-bold shadow flex items-center gap-2 cursor-pointer transition-opacity"
+          className="px-4 py-2 h-9 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white text-xs font-bold shadow flex items-center gap-2 cursor-pointer transition-colors"
         >
           <i className="fa-solid fa-plus text-xs"></i>
           <span>Crear Proyecto</span>
@@ -197,7 +197,7 @@ export default function SeccionProyectos() {
           <button
             type="button"
             onClick={() => router.push("/proyectos/crear")}
-            className="px-4 py-2 rounded-[4px] bg-[var(--accent-gray)] text-white text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+            className="px-4 py-2 rounded-[4px] bg-[#095a86] text-white text-xs font-bold hover:bg-[#07476b] transition-colors cursor-pointer"
           >
             Crear Primer Proyecto
           </button>
@@ -271,7 +271,7 @@ export default function SeccionProyectos() {
                   <button
                     type="button"
                     onClick={() => setModalLoginProyecto(proyecto)}
-                    className="flex-1 py-2 px-3 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white text-xs font-bold transition-opacity cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
+                    className="flex-1 py-2 px-3 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <i className="fa-solid fa-right-to-bracket text-[10px]"></i>
                     <span>Login</span>
@@ -374,7 +374,7 @@ export default function SeccionProyectos() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white text-xs font-bold transition-opacity cursor-pointer"
+                  className="px-4 py-2 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white text-xs font-bold transition-colors cursor-pointer"
                 >
                   Guardar Proyecto
                 </button>
@@ -426,7 +426,7 @@ export default function SeccionProyectos() {
                   alert(`Sesión iniciada con éxito en el proyecto: ${modalLoginProyecto.nombre}`);
                   setModalLoginProyecto(null);
                 }}
-                className="w-full py-2.5 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <i className="fa-solid fa-right-to-bracket text-xs"></i>
                 <span>Acceder con Coinstellation SSO</span>

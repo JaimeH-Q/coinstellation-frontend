@@ -78,7 +78,7 @@ body.light-mode .landing-page,
 .landing-page > .coin-roadmap-modal {
   order: 5;
 }
-header {
+.landing-page header {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -336,11 +336,11 @@ nav a {
   background: #0d1b2a;
 }
 @media (max-width: 900px) {
-  header {
+  .landing-page header {
     flex-wrap: wrap;
     gap: 1rem;
   }
-  header nav {
+  .landing-page header nav {
     order: 3;
     width: 100%;
   }
@@ -358,7 +358,7 @@ nav a {
   }
 }
 @media (max-width: 560px) {
-  header {
+  .landing-page header {
     padding: 1rem;
   }
   .logo {
@@ -741,7 +741,7 @@ nav a {
   font-weight: 600;
 }
 @media (max-width: 760px) {
-  header {
+  .landing-page header {
     flex-wrap: wrap;
     gap: 1rem;
   }
@@ -763,7 +763,7 @@ nav a {
   .panel-layout {
     flex-direction: column;
   }
-  header {
+  .landing-page header {
     position: sticky;
   }
   .nav-toggle {
@@ -786,21 +786,21 @@ nav a {
     height: 2px;
     background: currentColor;
   }
-  header nav {
+  .landing-page header nav {
     display: none;
     order: 3;
     width: 100%;
     padding-top: 0.5rem;
   }
-  header nav.is-open {
+  .landing-page header nav.is-open {
     display: block;
   }
-  header nav ul {
+  .landing-page header nav ul {
     flex-direction: column;
     align-items: stretch;
     gap: 0.25rem;
   }
-  header nav ul a {
+  .landing-page header nav ul a {
     display: block;
     padding: 0.75rem 0.5rem;
   }
@@ -829,7 +829,7 @@ nav a {
   .page-shell {
     width: 100%;
   }
-  header {
+  .landing-page header {
     padding: 1rem 5%;
   }
   .nav-actions .btn-login {
@@ -1479,7 +1479,7 @@ body.light-mode {
   color: #172033;
   background: #f4f7fb;
 }
-body.light-mode header {
+body.light-mode .landing-page header {
   border-bottom-color: rgba(15, 23, 42, 0.1);
   background: rgba(244, 247, 251, 0.9);
 }

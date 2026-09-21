@@ -1,40 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import BarraLateral from "@/components/dashboard/BarraLateral";
 import NavbarSuperior from "@/components/dashboard/NavbarSuperior";
 import SeccionProyectos from "@/components/dashboard/SeccionProyectos";
 import SeccionBilletera from "@/components/dashboard/SeccionBilletera";
 import SeccionPaquetes from "@/components/dashboard/SeccionPaquetes";
 import TarjetaEstadistica from "@/components/dashboard/TarjetaEstadistica";
-import TablaOperaciones from "@/components/dashboard/TablaOperaciones";
-import GraficoRecursos from "@/components/dashboard/GraficoRecursos";
-
-// Lista de datos de las 4 tarjetas de estadísticas
-const DATOS_ESTADISTICAS = [
-  {
-    titulo: "Usuarios conectados",
-    valor: "1,428",
-    tendencia: "+5.2%",
-    descripcion: "vs. hora anterior",
-  },
-  {
-    titulo: "Carga de sistema",
-    valor: "24.5%",
-    descripcion: "Rendimiento óptimo",
-  },
-  {
-    titulo: "Cola de transferencias",
-    valor: "12",
-    descripcion: "Operaciones pendientes",
-  },
-  {
-    titulo: "Volumen de Subastas",
-    valor: "$45,210",
-    tendencia: "+12.4%",
-    descripcion: "hoy",
-  },
-];
+import EstadoTiendas from "@/components/dashboard/EstadoTiendas";
+import SelectorTiempo, { TipoRangoTiempo } from "@/components/dashboard/SelectorTiempo";
+import GraficoLineasEvolucion from "@/components/dashboard/GraficoLineasEvolucion";
+import GraficoDonasMetodosYPaquetes from "@/components/dashboard/GraficoDonasMetodosYPaquetes";
+import { obtenerDatosDashboard } from "@/components/dashboard/datosDashboard";
 
 export default function DashboardPage() {
   // Estado para la pestaña seleccionada en el menú lateral o navbar
@@ -43,12 +20,27 @@ export default function DashboardPage() {
   // Estado para el tema oscuro
   const [esModoOscuro, setEsModoOscuro] = useState<boolean>(false);
 
-  // Sincroniza la clase .dark-theme en el <body>
+  // Estado para el selector de tiempo del dashboard
+  const [rangoTiempo, setRangoTiempo] = useState<TipoRangoTiempo>("7dias");
+  const [fechaPersonalizada, setFechaPersonalizada] = useState<Date>(new Date());
+
+  // Carga inicial y persistencia del tema en localStorage y <body>
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const temaGuardado = localStorage.getItem("coinstellation-theme");
+      if (temaGuardado === "dark") {
+        setEsModoOscuro(true);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (esModoOscuro) {
       document.body.classList.add("dark-theme");
+      localStorage.setItem("coinstellation-theme", "dark");
     } else {
       document.body.classList.remove("dark-theme");
+      localStorage.setItem("coinstellation-theme", "light");
     }
   }, [esModoOscuro]);
 
@@ -56,6 +48,20 @@ export default function DashboardPage() {
   const alternarModoOscuro = () => {
     setEsModoOscuro((previo) => !previo);
   };
+
+  // Manejador del cambio de rango de tiempo
+  const manejarSeleccionarRango = (rango: TipoRangoTiempo, fecha?: Date) => {
+    setRangoTiempo(rango);
+    if (fecha) {
+      setFechaPersonalizada(fecha);
+    }
+  };
+
+  // Datos reactivos para el dashboard según el rango de tiempo seleccionado
+  const datos = useMemo(
+    () => obtenerDatosDashboard(rangoTiempo, fechaPersonalizada),
+    [rangoTiempo, fechaPersonalizada]
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-main)]">
@@ -87,8 +93,9 @@ export default function DashboardPage() {
             /* Sección Paquetes: formulario Crea un Paquete y lista */
             <SeccionPaquetes />
           ) : seccionActiva === "dashboard" || seccionActiva === "panel-control" ? (
-            /* Sección Dashboard: estadísticas y gráficos */
+            /* Sección Dashboard: estadísticas, gráficos analíticos y operaciones */
             <div>
+              {/* Encabezado del Dashboard con título descriptivo */}
               <div className="mb-6 text-left">
                 <h1 className="page-title text-2xl font-extrabold">Dashboard</h1>
                 <p className="page-subtitle text-xs sm:text-sm">
@@ -96,28 +103,57 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* 4 Tarjetas de Estadísticas */}
+              {/* 4 Tarjetas de Estadísticas Principales */}
+              {/* 1: Ingresos netos, 2: Pedidos completados, 3: Valor medio del pedido, 4: Tasa de conversión */}
               <section className="stats-grid">
-                {DATOS_ESTADISTICAS.map((item) => (
+                {datos.kpis.map((item) => (
                   <TarjetaEstadistica
                     key={item.titulo}
                     titulo={item.titulo}
                     valor={item.valor}
                     tendencia={item.tendencia}
                     descripcion={item.descripcion}
+                    icono={item.icono}
                   />
                 ))}
               </section>
 
-              {/* Grilla Inferior: Tabla de Operaciones + Gráfico de Recursos */}
-              <section className="dashboard-grid">
-                <TablaOperaciones />
-                <GraficoRecursos
-                  esModoOscuro={esModoOscuro}
-                  memoriaTotal="64 GB"
-                  usoActual="24.8 GB"
-                  porcentajeUso={38.75}
-                />
+              {/* Sección de Gráficos con Selector de Tiempo en la esquina superior derecha */}
+              <section className="mb-7 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h2 className="text-lg font-bold text-[var(--text-primary)]">
+                      Rendimiento y Métricas de Venta
+                    </h2>
+                    <p className="text-xs text-[var(--text-secondary)]">
+                      Comportamiento temporal de ingresos, volumen de pedidos y desglose por pasarelas
+                    </p>
+                  </div>
+
+                  {/* Selector de tiempo con ventana emergente y mini-calendario */}
+                  <SelectorTiempo
+                    rangoActual={rangoTiempo}
+                    fechaSeleccionada={fechaPersonalizada}
+                    onSeleccionarRango={manejarSeleccionarRango}
+                  />
+                </div>
+
+                {/* Cuadrícula de Gráficos: Líneas (Evolución Temporal) + Donas (Métodos y Paquetes) */}
+                <div className="analytics-grid">
+                  <GraficoLineasEvolucion
+                    datos={datos.graficoLineas}
+                    esModoOscuro={esModoOscuro}
+                  />
+                  <GraficoDonasMetodosYPaquetes
+                    datos={datos.graficoDonas}
+                    esModoOscuro={esModoOscuro}
+                  />
+                </div>
+              </section>
+
+              {/* Cuadro de Estado y Salud de las Tiendas */}
+              <section className="mt-7">
+                <EstadoTiendas />
               </section>
             </div>
           ) : (

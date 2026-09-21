@@ -23,6 +23,7 @@ export default function PaginaLogin() {
 
   // Estados de interfaz y feedback
   const [esModoOscuro, setEsModoOscuro] = useState(false);
+  const [temaInicializado, setTemaInicializado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [recuerdame, setRecuerdame] = useState(false);
@@ -30,14 +31,28 @@ export default function PaginaLogin() {
   const [correoOlvido, setCorreoOlvido] = useState("");
   const [mensajeOlvidoExito, setMensajeOlvidoExito] = useState(false);
 
+  // Carga inicial del tema desde localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const temaGuardado = localStorage.getItem("coinstellation-theme");
+      if (temaGuardado === "dark") {
+        setEsModoOscuro(true);
+      }
+      setTemaInicializado(true);
+    }
+  }, []);
+
   // Sincroniza la clase dark-theme en el <body>
   useEffect(() => {
+    if (!temaInicializado) return;
     if (esModoOscuro) {
       document.body.classList.add("dark-theme");
+      localStorage.setItem("coinstellation-theme", "dark");
     } else {
       document.body.classList.remove("dark-theme");
+      localStorage.setItem("coinstellation-theme", "light");
     }
-  }, [esModoOscuro]);
+  }, [esModoOscuro, temaInicializado]);
 
   // Si viene con un correo desde URL o si viene con parámetro de registro o recuerdame
   useEffect(() => {
@@ -211,27 +226,45 @@ export default function PaginaLogin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between p-6 transition-colors duration-300">
-      {/* Barra superior con selector de tema */}
-      <header className="flex justify-between items-center max-w-5xl w-full mx-auto">
-        <Link href="/" className="brand-container mb-0 cursor-pointer">
-          <div className="brand-logo-icon">C</div>
-          <span className="brand-name">coinstellation</span>
-        </Link>
+    <div
+      className={`min-h-screen flex flex-col justify-between transition-colors duration-300 ${
+        esModoOscuro ? "bg-[#0b0f19] text-[#f9fafb]" : "bg-[#f8fafc] text-[#1e293b]"
+      }`}
+    >
+      {/* Barra superior: blanco en modo claro y negro en modo oscuro */}
+      <header
+        className={`w-full border-b transition-colors duration-300 px-6 py-3.5 sticky top-0 z-30 ${
+          esModoOscuro
+            ? "bg-black border-neutral-900 text-white"
+            : "bg-white border-slate-200 text-slate-900 shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+        }`}
+      >
+        <div className="flex justify-between items-center max-w-5xl w-full mx-auto">
+          <Link href="/" className="brand-container !mb-0 cursor-pointer flex items-center gap-2.5 my-auto">
+            <div className="brand-logo-icon">C</div>
+            <span
+              className={`brand-name font-bold transition-colors duration-300 ${
+                esModoOscuro ? "text-white" : "text-slate-900"
+              }`}
+            >
+              coinstellation
+            </span>
+          </Link>
 
-        <button
-          type="button"
-          onClick={() => setEsModoOscuro(!esModoOscuro)}
-          className="header-action-btn"
-          aria-label="Cambiar tema"
-          title={esModoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-        >
-          <i className={esModoOscuro ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
-        </button>
+          <button
+            type="button"
+            onClick={() => setEsModoOscuro(!esModoOscuro)}
+            className="header-action-btn cursor-pointer"
+            aria-label="Cambiar tema"
+            title={esModoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          >
+            <i className={esModoOscuro ? "fa-solid fa-sun" : "fa-solid fa-moon"}></i>
+          </button>
+        </div>
       </header>
 
       {/* Tarjeta Central de Autenticación */}
-      <main className="flex-1 flex items-center justify-center my-8">
+      <main className="flex-1 flex items-center justify-center p-6 my-6">
         <div className="panel w-full max-w-md shadow-lg">
           <div className="text-center mb-6">
             <h1 className="page-title text-2xl">
@@ -260,7 +293,7 @@ export default function PaginaLogin() {
                     setCorreoOlvido(e.target.value);
                   }}
                   required
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -293,7 +326,7 @@ export default function PaginaLogin() {
                   value={contrasena}
                   onChange={(e) => setContrasena(e.target.value)}
                   required
-                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2.5 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -304,7 +337,7 @@ export default function PaginaLogin() {
                   type="checkbox"
                   checked={recuerdame}
                   onChange={(e) => setRecuerdame(e.target.checked)}
-                  className="h-4 w-4 rounded border-[var(--border-color)] text-[var(--accent-gray)] focus:ring-[var(--accent-gray)] cursor-pointer"
+                  className="h-4 w-4 rounded border-[var(--border-color)] text-[#095a86] focus:ring-[#095a86] cursor-pointer"
                 />
                 <label
                   htmlFor="recuerdame"
@@ -325,7 +358,7 @@ export default function PaginaLogin() {
               <button
                 type="submit"
                 disabled={cargando}
-                className="mt-2 w-full py-3 px-4 rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-sm transition-all shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="mt-2 w-full py-3 px-4 rounded-lg bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-sm transition-all shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {cargando ? (
                   <>
@@ -358,7 +391,7 @@ export default function PaginaLogin() {
                   onChange={(e) => setNombre(e.target.value)}
                   required
                   disabled={cargando}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -378,7 +411,7 @@ export default function PaginaLogin() {
                   onChange={(e) => setCorreo(e.target.value)}
                   required
                   disabled={cargando}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -398,7 +431,7 @@ export default function PaginaLogin() {
                   onChange={(e) => setContrasena(e.target.value)}
                   required
                   disabled={cargando}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -418,7 +451,7 @@ export default function PaginaLogin() {
                   onChange={(e) => setVerificarContrasena(e.target.value)}
                   required
                   disabled={cargando}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                 />
               </div>
 
@@ -430,7 +463,7 @@ export default function PaginaLogin() {
                   checked={aceptaTerminos}
                   onChange={(e) => setAceptaTerminos(e.target.checked)}
                   disabled={cargando}
-                  className="mt-0.5 h-4 w-4 rounded border-[var(--border-color)] text-[var(--accent-gray)] focus:ring-[var(--accent-gray)] cursor-pointer"
+                  className="mt-0.5 h-4 w-4 rounded border-[var(--border-color)] text-[#095a86] focus:ring-[#095a86] cursor-pointer"
                 />
                 <label
                   htmlFor="reg-terminos"
@@ -460,7 +493,7 @@ export default function PaginaLogin() {
               <button
                 type="submit"
                 disabled={cargando}
-                className="mt-2 w-full py-3 px-4 rounded-lg bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-sm transition-all shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="mt-2 w-full py-3 px-4 rounded-lg bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-sm transition-all shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {cargando ? (
                   <>
@@ -548,7 +581,7 @@ export default function PaginaLogin() {
                 <button
                   type="button"
                   onClick={() => setModalOlvido(false)}
-                  className="w-full py-2.5 px-4 rounded-lg bg-[var(--accent-gray)] text-white font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer"
+                  className="w-full py-2.5 px-4 rounded-lg bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs transition-colors cursor-pointer"
                 >
                   Entendido
                 </button>
@@ -569,13 +602,13 @@ export default function PaginaLogin() {
                     value={correoOlvido}
                     onChange={(e) => setCorreoOlvido(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="mt-1 w-full py-2.5 px-4 rounded-lg bg-[var(--accent-gray)] text-white font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer"
+                  className="mt-1 w-full py-2.5 px-4 rounded-lg bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs transition-colors cursor-pointer"
                 >
                   Enviar Instrucciones
                 </button>

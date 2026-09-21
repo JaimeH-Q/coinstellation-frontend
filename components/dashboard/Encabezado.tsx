@@ -176,7 +176,7 @@ export default function Encabezado({
               aria-haspopup="true"
               aria-expanded={menuUsuarioAbierto}
             >
-              <div className="w-6 h-6 rounded-[3px] bg-[var(--accent-gray)] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
+              <div className="w-6 h-6 rounded-[3px] bg-[#095a86] text-white text-[10px] font-bold flex items-center justify-center shadow-xs">
                 {iniciales}
               </div>
               <span className="max-w-[120px] truncate">{nombreUsuario}</span>
@@ -268,7 +268,7 @@ export default function Encabezado({
               <i className="fa-solid fa-xmark text-lg"></i>
             </button>
             <div className="flex items-center gap-2.5 mb-4 text-left">
-              <div className="w-8 h-8 rounded-[4px] bg-[var(--accent-gray)] text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[4px] bg-[#095a86] text-white flex items-center justify-center">
                 <i className="fa-solid fa-folder-tree text-sm"></i>
               </div>
               <div>
@@ -310,7 +310,7 @@ export default function Encabezado({
             <button
               type="button"
               onClick={() => setModalProyectosAbierto(false)}
-              className="w-full py-2.5 rounded-[4px] bg-[var(--accent-gray)] text-white text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
+              className="w-full py-2.5 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white text-xs font-bold transition-colors cursor-pointer"
             >
               Cerrar
             </button>
@@ -330,7 +330,7 @@ export default function Encabezado({
               <i className="fa-solid fa-xmark text-lg"></i>
             </button>
             <div className="flex items-center gap-2.5 mb-4 text-left">
-              <div className="w-8 h-8 rounded-[4px] bg-[var(--accent-gray)] text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-[4px] bg-[#095a86] text-white flex items-center justify-center">
                 <i className="fa-solid fa-wallet text-sm"></i>
               </div>
               <div>
@@ -355,7 +355,7 @@ export default function Encabezado({
             <div className="grid grid-cols-2 gap-2 mb-4">
               <button
                 type="button"
-                className="py-2.5 px-3 rounded-[4px] bg-[var(--accent-gray)] hover:opacity-90 text-white font-bold text-xs transition-opacity cursor-pointer flex items-center justify-center gap-1.5"
+                className="py-2.5 px-3 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <i className="fa-solid fa-arrow-down text-[10px]"></i>
                 Depositar
