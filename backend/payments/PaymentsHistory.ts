@@ -62,7 +62,6 @@ export interface PaymentHistoryFilters {
 	transactionId?: string;
 }
 
-export const EXAMPLE_PAYMENT_USERS = ["user-001", "user-002", "user-003", "user-004"] as const;
 export const EXAMPLE_PAYMENT_PACKAGES = ["package-basic", "package-pro", "package-enterprise"] as const;
 export const EXAMPLE_PAYMENT_ASSETS: PaymentAsset[] = [
 	{ currency: "USDC", network: "STELLAR" },
@@ -79,15 +78,19 @@ const EXAMPLE_PAYMENT_STATUSES: PaymentStatus[] = [
 ];
 
 /** Genera pagos de juguete distintos en cada llamada para demos y pruebas locales. */
-export function createExamplePayments(count = 5): Payment[] {
+export function createExamplePayments(userId: string, count = 5): Payment[] {
+	if (!userId.trim()) {
+		throw new Error("Payment example userId is required.");
+	}
+
 	if (!Number.isInteger(count) || count < 0) {
 		throw new Error("Payment example count must be a non-negative integer.");
 	}
 
-	return Array.from({ length: count }, () => createExamplePayment());
+	return Array.from({ length: count }, () => createExamplePayment(userId.trim()));
 }
 
-function createExamplePayment(): Payment {
+function createExamplePayment(userId: string): Payment {
 	const amountInCents = randomInteger(500, 100000);
 	const feeInCents = Math.max(1, Math.round(amountInCents * randomInteger(1, 5) / 100));
 	const status = randomItem(EXAMPLE_PAYMENT_STATUSES);
@@ -100,7 +103,7 @@ function createExamplePayment(): Payment {
 
 	return {
 		id: crypto.randomUUID(),
-		userId: randomItem(EXAMPLE_PAYMENT_USERS),
+		userId,
 		packageId: randomItem(EXAMPLE_PAYMENT_PACKAGES),
 		amount: formatCents(amountInCents),
 		fees: formatCents(feeInCents),
