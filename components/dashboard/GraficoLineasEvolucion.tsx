@@ -100,7 +100,7 @@ export default function GraficoLineasEvolucion({
             callbacks: {
               label: function (context) {
                 const datasetLabel = context.dataset.label || "";
-                const val = context.parsed.y;
+                const val = context.parsed.y ?? 0;
                 if (datasetLabel.includes("Ingresos")) {
                   return ` Ingresos: $${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
