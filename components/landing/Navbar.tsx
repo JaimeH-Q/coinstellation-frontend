@@ -91,9 +91,8 @@ export default function Navbar({
               Productos
             </a>
             <div
-              className={`dropdown-medium ${
-                dropdownActivo === "productsDropdown" ? "is-open" : ""
-              }`}
+              className={`dropdown-medium ${dropdownActivo === "productsDropdown" ? "is-open" : ""
+                }`}
               id="productsDropdown"
             >
               <div className="menu-grid-2col">
@@ -144,9 +143,8 @@ export default function Navbar({
               Soluciones
             </a>
             <div
-              className={`dropdown-medium ${
-                dropdownActivo === "solutionsDropdown" ? "is-open" : ""
-              }`}
+              className={`dropdown-medium ${dropdownActivo === "solutionsDropdown" ? "is-open" : ""
+                }`}
               id="solutionsDropdown"
             >
               <div className="menu-grid-2col">
@@ -197,9 +195,8 @@ export default function Navbar({
               Desarrolladores
             </a>
             <div
-              className={`dropdown-medium ${
-                dropdownActivo === "developersDropdown" ? "is-open" : ""
-              }`}
+              className={`dropdown-medium ${dropdownActivo === "developersDropdown" ? "is-open" : ""
+                }`}
               id="developersDropdown"
             >
               <div className="menu-grid-2col">
@@ -250,9 +247,8 @@ export default function Navbar({
               Precios
             </a>
             <div
-              className={`dropdown-medium ${
-                dropdownActivo === "pricingDropdown" ? "is-open" : ""
-              }`}
+              className={`dropdown-medium ${dropdownActivo === "pricingDropdown" ? "is-open" : ""
+                }`}
               id="pricingDropdown"
             >
               <div className="menu-grid-2col">
@@ -294,14 +290,15 @@ export default function Navbar({
 
       <div className="nav-actions">
         <button
-          className="theme-toggle"
-          id="themeToggle"
           type="button"
-          aria-label={esModoClaro ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
-          aria-pressed={esModoClaro}
           onClick={onAlternarTema}
+          className="header-action-btn cursor-pointer"
+          id="themeToggle"
+          aria-label={esModoClaro ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
+          aria-pressed={!esModoClaro}
+          title={esModoClaro ? "Cambiar a modo oscuro" : "Cambiar a modo claro"}
         >
-          {esModoClaro ? "Oscuro" : "Claro"}
+          <i className={esModoClaro ? "fa-solid fa-moon" : "fa-solid fa-sun"}></i>
         </button>
 
         <Link href="/login" className="btn-login">
