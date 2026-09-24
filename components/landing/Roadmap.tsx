@@ -16,16 +16,16 @@ const pasos: PasoRoadmap[] = [
     id: 0,
     numero: "01",
     categoria: "Cuenta",
-    titulo: "Regístrate",
-    descripcion: "Crea tu cuenta y confirma tus datos.",
-    posicion: "top",
+    titulo: "Regístrate gratis",
+    descripcion: "Crea tu cuenta en 1 minuto sin tarjeta.",
+    posicion: "top"
   },
   {
     id: 1,
     numero: "02",
     categoria: "Catálogo",
     titulo: "Arma tu tienda",
-    descripcion: "Agrega productos y configura los pagos.",
+    descripcion: "Agrega rangos, ítems y fija sus precios.",
     posicion: "bottom",
   },
   {
@@ -33,15 +33,15 @@ const pasos: PasoRoadmap[] = [
     numero: "03",
     categoria: "Publicación",
     titulo: "Publica tu tienda",
-    descripcion: "Actívala y comparte el enlace con tus clientes.",
+    descripcion: "Comparte la tienda con tu comunidad.",
     posicion: "top",
   },
   {
     id: 3,
     numero: "04",
     categoria: "Ventas",
-    titulo: "Gestiona tu primer pedido",
-    descripcion: "Confirma la compra y recibe tus ganancias.",
+    titulo: "Genera ganancias",
+    descripcion: "Visualiza estadísticas en tiempo real y gestiona tus ingresos desde un solo lugar.",
     posicion: "bottom",
   },
 ];
@@ -91,13 +91,12 @@ export default function Roadmap() {
             return (
               <article
                 key={paso.id}
-                className={`coin-roadmap-step coin-roadmap-step-${paso.posicion} ${
-                  estaRevisado ? "is-reviewed" : ""
-                }`}
+                className={`coin-roadmap-step coin-roadmap-step-${paso.posicion} ${estaRevisado ? "is-reviewed" : ""
+                  }`}
                 data-roadmap-step={paso.id}
                 tabIndex={0}
                 role="button"
-                aria-label={`Abrir información del Paso ${paso.numero}`}
+                aria-label={`Paso ${paso.numero}: ${paso.titulo}`}
                 onClick={() => alternarPaso(paso.id)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
@@ -116,9 +115,6 @@ export default function Roadmap() {
                   </div>
                   <h3>{paso.titulo}</h3>
                   <p>{paso.descripcion}</p>
-                  <button type="button">
-                    {estaRevisado ? "Completado" : "Más información"} <span>↗</span>
-                  </button>
                 </div>
               </article>
             );

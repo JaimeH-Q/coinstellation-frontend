@@ -17,6 +17,7 @@ export default function Navbar({
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [dropdownActivo, setDropdownActivo] = useState<string | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const cierreDropdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cerrar dropdown al hacer click fuera o presionar Escape
   useEffect(() => {
@@ -38,16 +39,41 @@ export default function Navbar({
     return () => {
       document.removeEventListener("click", handleClickFuera);
       document.removeEventListener("keydown", handleKeyDown);
+      if (cierreDropdownRef.current) {
+        clearTimeout(cierreDropdownRef.current);
+      }
     };
   }, []);
+
+  const cancelarCierreDropdown = () => {
+    if (cierreDropdownRef.current) {
+      clearTimeout(cierreDropdownRef.current);
+      cierreDropdownRef.current = null;
+    }
+  };
+
+  const programarCierreDropdown = () => {
+    cancelarCierreDropdown();
+    cierreDropdownRef.current = setTimeout(() => {
+      setDropdownActivo(null);
+      cierreDropdownRef.current = null;
+    }, 300);
+  };
+
+  const mantenerDropdownAbierto = (id: string) => {
+    cancelarCierreDropdown();
+    setDropdownActivo(id);
+  };
 
   const alternarDropdown = (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    cancelarCierreDropdown();
     setDropdownActivo((actual) => (actual === id ? null : id));
   };
 
   const cerrarTodo = () => {
+    cancelarCierreDropdown();
     setDropdownActivo(null);
     setMenuAbierto(false);
   };
@@ -79,7 +105,11 @@ export default function Navbar({
       >
         <ul>
           {/* PRODUCTOS */}
-          <li className="products-nav-item dropdown-nav-item">
+          <li
+            className="products-nav-item dropdown-nav-item"
+            onMouseEnter={() => mantenerDropdownAbierto("productsDropdown")}
+            onMouseLeave={programarCierreDropdown}
+          >
             <a
               href="#coin-services"
               className="dropdown-trigger"
@@ -94,6 +124,8 @@ export default function Navbar({
               className={`dropdown-medium ${dropdownActivo === "productsDropdown" ? "is-open" : ""
                 }`}
               id="productsDropdown"
+              onMouseEnter={() => mantenerDropdownAbierto("productsDropdown")}
+              onMouseLeave={programarCierreDropdown}
             >
               <div className="menu-grid-2col">
                 <div className="menu-group">
@@ -131,7 +163,11 @@ export default function Navbar({
           </li>
 
           {/* SOLUCIONES */}
-          <li className="dropdown-nav-item">
+          <li
+            className="dropdown-nav-item"
+            onMouseEnter={() => mantenerDropdownAbierto("solutionsDropdown")}
+            onMouseLeave={programarCierreDropdown}
+          >
             <a
               href="#solutions"
               className="dropdown-trigger"
@@ -146,6 +182,8 @@ export default function Navbar({
               className={`dropdown-medium ${dropdownActivo === "solutionsDropdown" ? "is-open" : ""
                 }`}
               id="solutionsDropdown"
+              onMouseEnter={() => mantenerDropdownAbierto("solutionsDropdown")}
+              onMouseLeave={programarCierreDropdown}
             >
               <div className="menu-grid-2col">
                 <div className="menu-group">
@@ -183,7 +221,11 @@ export default function Navbar({
           </li>
 
           {/* DESARROLLADORES */}
-          <li className="dropdown-nav-item">
+          <li
+            className="dropdown-nav-item"
+            onMouseEnter={() => mantenerDropdownAbierto("developersDropdown")}
+            onMouseLeave={programarCierreDropdown}
+          >
             <a
               href="#documentation"
               className="dropdown-trigger"
@@ -198,6 +240,8 @@ export default function Navbar({
               className={`dropdown-medium ${dropdownActivo === "developersDropdown" ? "is-open" : ""
                 }`}
               id="developersDropdown"
+              onMouseEnter={() => mantenerDropdownAbierto("developersDropdown")}
+              onMouseLeave={programarCierreDropdown}
             >
               <div className="menu-grid-2col">
                 <div className="menu-group">
@@ -235,7 +279,11 @@ export default function Navbar({
           </li>
 
           {/* PRECIOS */}
-          <li className="dropdown-nav-item">
+          <li
+            className="dropdown-nav-item"
+            onMouseEnter={() => mantenerDropdownAbierto("pricingDropdown")}
+            onMouseLeave={programarCierreDropdown}
+          >
             <a
               href="#pricing"
               className="dropdown-trigger"
@@ -250,6 +298,8 @@ export default function Navbar({
               className={`dropdown-medium ${dropdownActivo === "pricingDropdown" ? "is-open" : ""
                 }`}
               id="pricingDropdown"
+              onMouseEnter={() => mantenerDropdownAbierto("pricingDropdown")}
+              onMouseLeave={programarCierreDropdown}
             >
               <div className="menu-grid-2col">
                 <div className="menu-group">
