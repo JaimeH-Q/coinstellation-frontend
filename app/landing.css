@@ -884,6 +884,7 @@ nav a {
 
 .visual-item strong {
   font-size: 0.92rem;
+  color: #f8fafc;
 }
 
 .store-item {
@@ -899,6 +900,7 @@ nav a {
 
 .store-info h4 {
   margin-bottom: 4px;
+  color: #f8fafc;
 }
 
 .store-info p {
@@ -1866,32 +1868,60 @@ body.light-mode .btn-secondary {
   border-color: rgba(23, 32, 51, 0.18);
   color: #172033;
 }
-
-body.light-mode .interactive-container {
+body.light-mode .interactive-container,
+body:not(.dark-theme):not(.landing-body) .interactive-container {
   border-color: rgba(23, 32, 51, 0.1);
   background: rgba(226, 234, 244, 0.82);
   box-shadow: 0 20px 40px rgba(30, 64, 95, 0.12);
 }
 
 body.light-mode .mode-switch,
+body:not(.dark-theme):not(.landing-body) .mode-switch,
 body.light-mode .visual-box,
+body:not(.dark-theme):not(.landing-body) .visual-box,
 body.light-mode .mini-code-box,
+body:not(.dark-theme):not(.landing-body) .mini-code-box,
 body.light-mode .visual-item,
+body:not(.dark-theme):not(.landing-body) .visual-item,
 body.light-mode .store-item,
-body.light-mode .tx-item {
+body:not(.dark-theme):not(.landing-body) .store-item,
+body.light-mode .tx-item,
+body:not(.dark-theme):not(.landing-body) .tx-item {
   border-color: rgba(23, 32, 51, 0.1);
   background: rgba(255, 255, 255, 0.65);
 }
 
 body.light-mode .switch-btn,
+body:not(.dark-theme):not(.landing-body) .switch-btn,
 body.light-mode .visual-header,
+body:not(.dark-theme):not(.landing-body) .visual-header,
 body.light-mode .live-title,
+body:not(.dark-theme):not(.landing-body) .live-title,
 body.light-mode .visual-item label,
-body.light-mode .store-info p {
+body:not(.dark-theme):not(.landing-body) .visual-item label,
+body.light-mode .store-info p,
+body:not(.dark-theme):not(.landing-body) .store-info p {
   color: #52647c;
 }
-
-body.light-mode .switch-btn.active {
+body.light-mode .visual-item strong,
+body:not(.dark-theme):not(.landing-body) .visual-item strong,
+body.light-mode .store-info h4,
+body:not(.dark-theme):not(.landing-body) .store-info h4 {
+  color: #172033;
+}
+body.light-mode .buy-button,
+body:not(.dark-theme):not(.landing-body) .buy-button {
+  background: #095a86;
+  color: #ffffff;
+  border-color: #07476a;
+  box-shadow: 0 4px 14px rgba(9, 90, 134, 0.25);
+}
+body.light-mode .buy-button:hover,
+body:not(.dark-theme):not(.landing-body) .buy-button:hover {
+  background: #0b6fa5;
+}
+body.light-mode .switch-btn.active,
+body:not(.dark-theme):not(.landing-body) .switch-btn.active {
   color: #172033;
   background: #dbeafe;
 }
@@ -1910,12 +1940,14 @@ body.light-mode .faq-answer {
   color: #52647c;
 }
 
-body.light-mode .mini-code-box pre {
+body.light-mode .mini-code-box pre,
+body:not(.dark-theme):not(.landing-body) .mini-code-box pre {
   color: #24527b;
 }
 
 body.light-mode .coin-services,
-body.light-mode .live-feed {
+body.light-mode .live-feed,
+body:not(.dark-theme):not(.landing-body) .live-feed {
   border-color: rgba(23, 32, 51, 0.12);
 }
 
@@ -1934,12 +1966,16 @@ body.light-mode .coin-roadmap-footer {
 
 body.light-mode .hero-text h1 span,
 body.light-mode .api-intro h2,
+body:not(.dark-theme):not(.landing-body) .api-intro h2,
 body.light-mode .coin-services-title {
   color: #075985;
   background: none;
   -webkit-text-fill-color: #075985;
 }
-
+body.light-mode .api-intro p,
+body:not(.dark-theme):not(.landing-body) .api-intro p {
+  color: #52647c;
+}
 body.light-mode .mega-menu-kicker,
 body.light-mode .mega-menu-featured-label,
 body.light-mode .mega-menu-card a,
