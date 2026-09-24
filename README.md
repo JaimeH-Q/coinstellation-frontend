@@ -1,90 +1,156 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Coinstellation Payments API
 
-## Getting Started
+Coinstellation permite que webstores externas creen cobros en Stellar mediante Cosmos Pay.
 
-First, run the development server:
+Este repositorio contiene la plataforma y su API hospedada. **Los integradores no necesitan clonar este frontend, instalar sus dependencias ni ejecutar el dashboard.** Para crear un pago solo deben llamar al endpoint público de creación desde el backend de su webstore.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Flujo de integración
+
+1. El backend de la webstore llama a `POST /api/payments/create`.
+2. Envía la wallet pública Stellar del creador en `destination`.
+3. Coinstellation crea el intent Cosmos Pay y genera el `MEMO_ID`.
+4. La respuesta incluye una URI SEP-7 y un QR para que el cliente pague.
+5. La webstore muestra el QR o la URI en su checkout.
+
+Cosmos Pay utiliza un único destino por intent, por lo que el pago llega directamente a la wallet pública indicada por la webstore.
+
+## Crear un pago
+
+Endpoint hospedado:
+
+```http
+POST https://TU_DOMINIO_COINSTELLATION/api/payments/create
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Headers requeridos:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-## Cosmos Pay para webstores
-
-Configura estas variables en el servidor:
-
-```env
-COSMOS_PAY_API_KEY=dv_...
-WEBSTORE_API_KEY=una-clave-privada-por-webstore
-WEBSTORE_ALLOWED_ORIGIN=https://tu-webstore.example
+```http
+Content-Type: application/json
+X-Store-Key: TU_CLAVE_DE_WEBSTORE
 ```
 
-Una webstore crea un pago llamando al backend, nunca exponiendo `COSMOS_PAY_API_KEY`:
+Body mínimo:
+
+```json
+{
+  "destination": "G...WALLET_PUBLICA_DEL_CREADOR",
+  "amount": "24.99",
+  "currency": "XLM",
+  "description": "Orden #1001"
+}
+```
+
+### Ejemplo con `fetch`
+
+Este código se ejecuta en el backend de la webstore, no en el navegador:
 
 ```ts
-const response = await fetch("https://api.tu-plataforma.example/api/payments/create", {
-	method: "POST",
-	headers: {
-		"Content-Type": "application/json",
-		"X-Store-Key": process.env.WEBSTORE_API_KEY,
-	},
-	body: JSON.stringify({
-		destination: "G...CUENTA_MERCHANT",
-		amount: "10",
-		currency: "XLM",
-		description: "Orden #1001",
-	}),
-});
+const response = await fetch(
+  "https://TU_DOMINIO_COINSTELLATION/api/payments/create",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Store-Key": process.env.WEBSTORE_API_KEY!,
+    },
+    body: JSON.stringify({
+      destination: "G...WALLET_PUBLICA_DEL_CREADOR",
+      amount: "24.99",
+      currency: "XLM",
+      description: "Orden #1001",
+    }),
+  },
+);
 
-const { payment } = await response.json();
-// payment.uri y payment.qr se muestran en el checkout.
+const data = await response.json();
+
+if (!response.ok) {
+  throw new Error(data.error ?? "No se pudo crear el pago");
+}
+
+const payment = data.payment;
+// payment.uri: enlace web+stellar:pay para la wallet
+// payment.qr: imagen QR para mostrar en el checkout
+// payment.id: identificador del intent
+// payment.memo: MEMO_ID generado por Coinstellation
 ```
 
-También puedes crear el pago desde cualquier backend externo con `curl`:
+### Ejemplo con `curl`
 
 ```bash
-curl -X POST https://tu-plataforma.example/api/payments/create \
-	-H "Content-Type: application/json" \
-	-H "X-Store-Key: tu-clave-de-webstore" \
-	-d '{
-		"destination": "G...WALLET_PUBLICA_DEL_CREADOR",
-		"amount": "24.99",
-		"currency": "XLM",
-		"description": "Orden #1001",
-	}'
+curl -X POST https://TU_DOMINIO_COINSTELLATION/api/payments/create \
+  -H "Content-Type: application/json" \
+  -H "X-Store-Key: TU_CLAVE_DE_WEBSTORE" \
+  -d '{
+    "destination": "G...WALLET_PUBLICA_DEL_CREADOR",
+    "amount": "24.99",
+    "currency": "XLM",
+    "description": "Orden #1001"
+  }'
 ```
 
-`destination` es obligatorio y debe ser la wallet pública Stellar del creador. La respuesta
-incluye `payment.id`, `payment.memo`, `payment.uri` y `payment.qr`. El backend genera
-`payment.memo` como un `MEMO_ID` numérico para correlacionar la orden. Si falta `destination`, el endpoint
-responde `422` y no crea ningún intent.
+## Respuesta exitosa
 
-La cabecera `X-Store-Key` debe enviarse desde el backend externo; no la incluyas en código
-que se ejecute directamente en el navegador.
+```json
+{
+  "payment": {
+    "id": "pi_...",
+    "status": "PENDING",
+    "network": "testnet",
+    "destination": "G...WALLET_PUBLICA_DEL_CREADOR",
+    "amount": "24.99",
+    "asset": "native",
+    "memo": "1727182345123",
+    "uri": "web+stellar:pay?...",
+    "qr": "data:image/png;base64,...",
+    "createdAt": "2026-09-24T00:00:00.000Z"
+  }
+}
+```
 
-Después de que el cliente complete el pago con Freighter, xBull, Rabet, LOBSTR o Albedo,
-la webstore valida el `txHash` con `POST /api/payments/{payment.id}/validate` y el mismo
-header `X-Store-Key`.
+`destination` es obligatorio y debe ser una dirección pública Stellar que empiece por `G`.
+El `amount` debe enviarse como string decimal. El `MEMO_ID` lo genera Coinstellation y no debe enviarlo la webstore.
 
-## Deploy on Vercel
+## Errores frecuentes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `401`: falta `X-Store-Key` o la clave no es válida.
+- `422`: falta `destination`, `amount` o `currency`, o tienen un formato inválido.
+- `502`: Cosmos Pay no pudo crear el intent.
+- `503`: falta configurar la API key de Cosmos Pay en el servidor de Coinstellation.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Seguridad
+
+- La llamada debe salir del backend de la webstore.
+- Nunca expongas `X-Store-Key` ni una API key de Cosmos Pay en el frontend.
+- `destination` es pública; nunca envíes una clave privada de wallet.
+- Usa una clave de webstore independiente por integración.
+- Usa wallets de testnet con API keys `dv_...` y mainnet con API keys `prod_...`.
+
+## Validación posterior
+
+Cuando el cliente haya pagado y la webstore tenga el `txHash`, puede validarlo mediante:
+
+```http
+POST https://TU_DOMINIO_COINSTELLATION/api/payments/{paymentId}/validate
+Content-Type: application/json
+X-Store-Key: TU_CLAVE_DE_WEBSTORE
+```
+
+```json
+{
+  "txHash": "HASH_DE_LA_TRANSACCION"
+}
+```
+
+La validación es server-side y confirma que la transacción corresponde al intent creado.
+
+## Para colaboradores del proyecto
+
+Solo quienes mantengan la plataforma necesitan clonar el repositorio. Para desarrollo interno:
+
+```bash
+npm install
+npm run dev
+```
+
+El dashboard local se abre en `http://localhost:3000`. Los consumidores de la API no necesitan seguir estos pasos.
