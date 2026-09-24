@@ -1,0 +1,374 @@
+"use client";
+
+import React, { useState } from "react";
+
+interface Transaccion {
+  id: string;
+  text: string;
+  amount: string;
+  status: string;
+}
+
+const transaccionesIniciales: Transaccion[] = [
+  { id: "1", text: "USDC → Wallet", amount: "+$24.99", status: "Approved" },
+  { id: "2", text: "API Call /checkout", amount: "2.1s", status: "Synced" },
+  { id: "3", text: "KYC Validation", amount: "Passed", status: "Verified" },
+];
+
+const SNIPPET_SDK = `import { Coinstellation } from '@coinstellation/sdk';
+
+const pay = new Coinstellation({ apiKey: 'cs_live_99' });
+
+await pay.checkout.process({
+  amount: 24.99,
+  currency: 'USD'
+});`;
+
+export default function SeccionApi() {
+  const [tabActiva, setTabActiva] = useState<"dev" | "store">("dev");
+  const [transacciones, setTransacciones] = useState<Transaccion[]>(transaccionesIniciales);
+  const [copiadoKey, setCopiadoKey] = useState(false);
+  const [copiadoCodigo, setCopiadoCodigo] = useState(false);
+  const [mensajeToast, setMensajeToast] = useState<string | null>(null);
+
+  const mostrarToast = (msg: string) => {
+    setMensajeToast(msg);
+    setTimeout(() => {
+      setMensajeToast(null);
+    }, 3000);
+  };
+
+  const agregarTransaccion = (texto: string, monto = "+$24.99", estado = "Approved") => {
+    const nuevaTx: Transaccion = {
+      id: Date.now().toString(),
+      text: texto,
+      amount: monto,
+      status: estado,
+    };
+    setTransacciones((prev) => [nuevaTx, ...prev].slice(0, 7));
+    mostrarToast(`Evento registrado: ${texto}`);
+  };
+
+  const copiarAlPortapapeles = async (texto: string, tipo: "key" | "code") => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(texto);
+      }
+      if (tipo === "key") {
+        setCopiadoKey(true);
+        setTimeout(() => setCopiadoKey(false), 2000);
+      } else {
+        setCopiadoCodigo(true);
+        setTimeout(() => setCopiadoCodigo(false), 2000);
+      }
+      mostrarToast(tipo === "key" ? "Clave API copiada al portapapeles" : "Código SDK copiado");
+    } catch {
+      mostrarToast("No se pudo copiar al portapapeles");
+    }
+  };
+
+  return (
+    <div className="text-left space-y-6">
+      {/* Toast flotante de confirmación */}
+      {mensajeToast && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-[8px] bg-[#095a86] text-white text-xs font-bold shadow-lg flex items-center gap-2 border border-sky-400/30 transition-all animate-bounce">
+          <i className="fa-solid fa-circle-check text-sky-200"></i>
+          <span>{mensajeToast}</span>
+        </div>
+      )}
+
+      {/* Encabezado principal */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="page-title text-2xl font-extrabold text-[var(--text-primary)]">
+            API
+          </h1>
+          <p className="page-subtitle text-xs sm:text-sm mt-0.5">
+            Gestión de credenciales, entorno interactivo y especificación de endpoints
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => agregarTransaccion("POST /v1/checkout (Simulated)", "+$24.99", "Synced")}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[6px] text-xs font-bold bg-[#095a86] hover:bg-[#0b6fa5] text-white transition-all shadow-sm cursor-pointer"
+          >
+            <i className="fa-solid fa-bolt"></i>
+            Simular pago
+          </button>
+        </div>
+      </div>
+
+      {/* Barra de credenciales rápidas */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Entorno y SLA */}
+        <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
+              Entorno
+            </span>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <strong className="text-xs font-bold text-[var(--text-primary)]">
+                Producción (Live)
+              </strong>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+            99.99% SLA
+          </span>
+        </div>
+
+        {/* API Key */}
+        <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
+          <div className="overflow-hidden mr-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
+              API Key Activa
+            </span>
+            <code className="text-xs font-mono font-bold text-[var(--text-primary)] truncate block mt-0.5">
+              cs_live_99
+            </code>
+          </div>
+          <button
+            type="button"
+            onClick={() => copiarAlPortapapeles("cs_live_99", "key")}
+            className="px-2.5 py-1 text-[11px] font-bold rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all cursor-pointer flex-shrink-0"
+            title="Copiar API Key"
+          >
+            <i className={`fa-solid ${copiadoKey ? "fa-check text-emerald-500" : "fa-copy"} mr-1`}></i>
+            {copiadoKey ? "Copiada" : "Copiar"}
+          </button>
+        </div>
+
+        {/* Base URL */}
+        <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
+          <div className="overflow-hidden mr-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
+              Endpoint Base
+            </span>
+            <code className="text-xs font-mono font-bold text-[var(--text-primary)] truncate block mt-0.5">
+              https://api.coinstellation.com/v1
+            </code>
+          </div>
+          <button
+            type="button"
+            onClick={() => copiarAlPortapapeles("https://api.coinstellation.com/v1", "key")}
+            className="px-2.5 py-1 text-[11px] font-bold rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all cursor-pointer flex-shrink-0"
+            title="Copiar URL"
+          >
+            <i className="fa-solid fa-copy mr-1"></i>
+            Copiar
+          </button>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          Cuadro de API del Inicio (Landing Interactive Container)
+          ========================================================================= */}
+      <div className="rounded-[18px] border border-[var(--border-color)] bg-[var(--bg-card)] p-4 sm:p-6 shadow-sm">
+        <div className="api-intro mb-6 text-center">
+          <h2 className="text-2xl sm:text-3xl font-extrabold mb-1">
+            Integra Coinstellation en minutos
+          </h2>
+          <p className="text-xs sm:text-sm text-[var(--text-muted)]">
+            Procesa pagos Stellar desde tu aplicación con latencia subsegundo.
+          </p>
+        </div>
+
+        <div className="interactive-container">
+          {/* Selector de modo */}
+          <div className="mode-switch">
+            <button
+              type="button"
+              className={`switch-btn ${tabActiva === "dev" ? "active" : ""}`}
+              id="tabDevDashboard"
+              onClick={() => setTabActiva("dev")}
+            >
+              Developer API
+            </button>
+            <button
+              type="button"
+              className={`switch-btn ${tabActiva === "store" ? "active" : ""}`}
+              id="tabStoreDashboard"
+              onClick={() => setTabActiva("store")}
+            >
+              Webstore Preview
+            </button>
+          </div>
+
+          {/* Panel Desarrollador */}
+          <div
+            className={`landing-panel ${tabActiva === "dev" ? "active" : ""}`}
+            id="panelDevDashboard"
+          >
+            <div className="panel-layout">
+              {/* Caja Visual de Estado */}
+              <div className="visual-box">
+                <div className="visual-header">
+                  <div className="flex items-center gap-2">
+                    <span className="status-dot"></span>
+                    <span>API ready</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => agregarTransaccion("API Call /checkout", "1.9s", "Synced")}
+                    className="text-[10px] font-bold text-[#095a86] dark:text-sky-300 hover:underline cursor-pointer lowercase"
+                  >
+                    <i className="fa-solid fa-play mr-1"></i>test call
+                  </button>
+                </div>
+                <div className="visual-grid">
+                  <div className="visual-item">
+                    <label>Key</label>
+                    <strong>cs_live_99</strong>
+                  </div>
+                  <div className="visual-item">
+                    <label>Route</label>
+                    <strong>/checkout</strong>
+                  </div>
+                  <div className="visual-item wide">
+                    <label>Result</label>
+                    <strong>Approved • $24.99 USD</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Columna de Código SDK */}
+              <div className="code-column">
+                <div className="mini-code-box">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">
+                      Node / TypeScript SDK
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => copiarAlPortapapeles(SNIPPET_SDK, "code")}
+                      className="text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <i className={`fa-solid ${copiadoCodigo ? "fa-check text-emerald-500" : "fa-copy"}`}></i>
+                      {copiadoCodigo ? "Copiado" : "Copiar"}
+                    </button>
+                  </div>
+                  <pre>
+                    <code>{SNIPPET_SDK}</code>
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Panel Vista Previa Tienda */}
+          <div
+            className={`landing-panel ${tabActiva === "store" ? "active" : ""}`}
+            id="panelStoreDashboard"
+          >
+            <div className="store-item">
+              <div className="store-info">
+                <h4>Cosmic Pass V2</h4>
+                <p>Instant activation • Global access</p>
+              </div>
+              <strong className="price">$24.99 USD</strong>
+            </div>
+            <button
+              type="button"
+              className="btn-primary buy-button"
+              id="buyButtonDashboard"
+              onClick={() => agregarTransaccion("Checkout / Cosmic Pass V2", "+$24.99", "Approved")}
+            >
+              Buy Now with Coinstellation
+            </button>
+          </div>
+
+          {/* Feed de Actividad en Red en Vivo */}
+          <div className="live-feed">
+            <div className="live-title">
+              <span>Live Network Activity</span>
+              <span className="transaction-count" id="txCountDashboard">
+                {transacciones.length} transaction
+                {transacciones.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <ul className="tx-list" id="txListDashboard">
+              {transacciones.map((item) => (
+                <li key={item.id} className="tx-item">
+                  <span className="flex items-center gap-2">
+                    <i className="fa-solid fa-arrow-right-arrow-left text-[10px] opacity-60"></i>
+                    {item.text}
+                  </span>
+                  <div className="tx-status">
+                    <span>{item.status}</span>
+                    <span>{item.amount}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          Guía de Referencia de Endpoints Principales
+          ========================================================================= */}
+      <div>
+        <h3 className="text-sm font-extrabold text-[var(--text-primary)] mb-3">
+          Endpoints recomendados
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Endpoint 1 */}
+          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                POST
+              </span>
+              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
+                /api/payments
+              </code>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mb-3">
+              Crea una orden de cobro en Stellar y devuelve la URI o transacción XDR para firma del usuario.
+            </p>
+            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
+              Authorization: Bearer cs_live_99
+            </div>
+          </div>
+
+          {/* Endpoint 2 */}
+          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                GET
+              </span>
+              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
+                /api/payments
+              </code>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mb-3">
+              Recupera el historial de transacciones, estados de liquidación y montos netos confirmados.
+            </p>
+            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
+              ?user_id=demo-user&count=50
+            </div>
+          </div>
+
+          {/* Endpoint 3 */}
+          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                WEBHOOKS
+              </span>
+              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
+                payment.completed
+              </code>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mb-3">
+              Notificación automática a tu servidor cuando una transacción alcanza finalidad en Stellar.
+            </p>
+            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
+              Header: X-Coinstellation-Signature
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -164,15 +164,13 @@ export default function GraficoLineasEvolucion({
 
         {/* Leyenda interactiva con totales del periodo */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-[#095a86]/10 border border-[#095a86]/30">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#095a86]"></span>
+          <div className="flex items-center px-2.5 py-1 rounded-[4px] bg-[#095a86]/10 border border-[#095a86]/30">
             <span className="text-xs font-bold text-[#095a86]">
               Ingresos: <strong className="text-[var(--text-primary)]">{datos.totalIngresos}</strong>
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-[4px] bg-emerald-500/10 border border-emerald-500/30">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <div className="flex items-center px-2.5 py-1 rounded-[4px] bg-emerald-500/10 border border-emerald-500/30">
             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
               Pedidos: <strong className="text-[var(--text-primary)]">{datos.totalPedidos}</strong>
             </span>

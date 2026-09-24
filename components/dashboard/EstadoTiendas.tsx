@@ -38,9 +38,6 @@ export default function EstadoTiendas() {
   const [tiendas] = useState<TiendaMonitoreo[]>(TIENDAS_INICIALES);
   const [filtroEstado, setFiltroEstado] = useState<"todos" | EstadoTienda>("todos");
 
-  const totalTiendas = tiendas.length;
-  const tiendasOnline = tiendas.filter((t) => t.estado === "online").length;
-
   const tiendasFiltradas =
     filtroEstado === "todos" ? tiendas : tiendas.filter((t) => t.estado === filtroEstado);
 
@@ -49,15 +46,9 @@ export default function EstadoTiendas() {
       {/* Cabecera del cuadro */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-[var(--border-subtle)]">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="panel-title text-base font-extrabold text-[var(--text-primary)]">
-              Estado de las Tiendas
-            </h2>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              {tiendasOnline}/{totalTiendas} Online
-            </span>
-          </div>
+          <h2 className="panel-title text-base font-extrabold text-[var(--text-primary)]">
+            Estado de las Tiendas
+          </h2>
           <p className="page-subtitle text-xs mt-0.5">
             Disponibilidad web y sincronización con el servidor de juegos en tiempo real
           </p>
@@ -90,7 +81,7 @@ export default function EstadoTiendas() {
       </div>
 
       {/* Tabla con ÚNICAMENTE Tienda / Plataforma y Estado Actual */}
-      <div className="table-container border border-[var(--border-color)] rounded-[6px] overflow-hidden">
+      <div className="w-full border border-[var(--border-color)] rounded-[6px] overflow-visible">
         <table className="operations-table">
           <thead>
             <tr>
@@ -137,37 +128,43 @@ export default function EstadoTiendas() {
 
                   {/* Columna 2: Estado Actual */}
                   <td className="py-3.5">
-                    {tienda.estado === "online" ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 w-fit">
+                    <div className="flex items-center gap-2.5">
+                      {tienda.estado === "online" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          🟢 Online
+                          Online
                         </span>
-                        <p className="text-xs text-[var(--text-secondary)] leading-snug">
-                          {tienda.detalleEstado}
-                        </p>
-                      </div>
-                    ) : tienda.estado === "degradado" ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 w-fit">
+                      ) : tienda.estado === "degradado" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                          🟡 Degradado / Alerta
+                          Degradado / Alerta
                         </span>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 leading-snug">
-                          {tienda.detalleEstado}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30 w-fit">
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
                           <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          🔴 Offline
+                          Offline
                         </span>
-                        <p className="text-xs text-rose-700 dark:text-rose-300 leading-snug">
-                          {tienda.detalleEstado}
-                        </p>
+                      )}
+
+                      {/* Ícono de admiración con tooltip descriptivo ampliado */}
+                      <div className="relative group/tip inline-flex items-center">
+                        <div
+                          className="w-5 h-5 rounded-full border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-secondary)] flex items-center justify-center text-[11px] font-bold cursor-default transition-colors group-hover/tip:border-[#095a86] group-hover/tip:text-[#095a86] group-hover/tip:bg-[#095a86]/10 select-none"
+                          aria-label="Descripción del estado"
+                        >
+                          !
+                        </div>
+                        <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2.5 w-72 sm:w-80 p-3.5 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] shadow-xl text-xs leading-relaxed text-[var(--text-primary)] opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-200 z-50 pointer-events-none">
+                          <div className="font-bold text-[11px] text-[var(--text-muted)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                            <i className="fa-solid fa-circle-info text-[#095a86]"></i>
+                            <span>Descripción del estado</span>
+                          </div>
+                          <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                            {tienda.detalleEstado}
+                          </p>
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </td>
                 </tr>
               );

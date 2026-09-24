@@ -27,11 +27,8 @@ const SECCIONES_MENU: SeccionMenu[] = [
     elementos: [
       { id: "dashboard", etiqueta: "Dashboard", icono: "fa-solid fa-gauge-high" },
       { id: "paquetes", etiqueta: "Paquetes", icono: "fa-solid fa-box-archive" },
-      { id: "nodos-servidor", etiqueta: "Nodos del Servidor", icono: "fa-solid fa-server" },
-      { id: "analiticas", etiqueta: "Analiticas", icono: "fa-solid fa-chart-line" },
-      { id: "casa-subastas", etiqueta: "Casa de Subastas", icono: "fa-solid fa-gavel" },
-      { id: "filtros-transferencias", etiqueta: "Filtros y transferencias", icono: "fa-solid fa-arrow-right-arrow-left" },
-      { id: "configuracion-yaml", etiqueta: "Configuracion YAML", icono: "fa-solid fa-code" },
+      { id: "historial-pagos", etiqueta: "Historial de pagos", icono: "fa-solid fa-receipt" },
+      { id: "api", etiqueta: "API", icono: "fa-solid fa-code" },
     ],
   },
   {
