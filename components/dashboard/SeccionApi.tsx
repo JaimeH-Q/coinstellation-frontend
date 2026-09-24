@@ -9,6 +9,13 @@ interface Transaccion {
   status: string;
 }
 
+interface CosmosPaymentResponse {
+  id: string;
+  uri: string | null;
+  qr: string | null;
+  network: string;
+}
+
 const transaccionesIniciales: Transaccion[] = [
   { id: "1", text: "USDC → Wallet", amount: "+$24.99", status: "Approved" },
   { id: "2", text: "API Call /checkout", amount: "2.1s", status: "Synced" },
@@ -30,6 +37,8 @@ export default function SeccionApi() {
   const [copiadoKey, setCopiadoKey] = useState(false);
   const [copiadoCodigo, setCopiadoCodigo] = useState(false);
   const [mensajeToast, setMensajeToast] = useState<string | null>(null);
+  const [simulandoPago, setSimulandoPago] = useState(false);
+  const [pagoCosmos, setPagoCosmos] = useState<CosmosPaymentResponse | null>(null);
 
   const mostrarToast = (msg: string) => {
     setMensajeToast(msg);
@@ -47,6 +56,37 @@ export default function SeccionApi() {
     };
     setTransacciones((prev) => [nuevaTx, ...prev].slice(0, 7));
     mostrarToast(`Evento registrado: ${texto}`);
+  };
+
+  const simularPagoCosmos = async () => {
+    setSimulandoPago(true);
+    setPagoCosmos(null);
+
+    try {
+      const response = await fetch("/api/payments/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: "24.99",
+          currency: "XLM",
+          description: "Cosmic Pass V2 (simulación)",
+          memo: `demo-${Date.now()}`,
+        }),
+      });
+      const data: { payment?: CosmosPaymentResponse; error?: string } = await response.json();
+
+      if (!response.ok || !data.payment) {
+        throw new Error(data.error ?? `Error ${response.status} al crear el pago.`);
+      }
+
+      setPagoCosmos(data.payment);
+      agregarTransaccion("Cosmos Pay intent creado", "+$24.99", "Pending");
+      mostrarToast("Intent Cosmos creado. Abre el enlace o escanea el QR para pagar.");
+    } catch (error) {
+      mostrarToast(error instanceof Error ? error.message : "No se pudo crear el pago Cosmos.");
+    } finally {
+      setSimulandoPago(false);
+    }
   };
 
   const copiarAlPortapapeles = async (texto: string, tipo: "key" | "code") => {
@@ -90,14 +130,39 @@ export default function SeccionApi() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => agregarTransaccion("POST /v1/checkout (Simulated)", "+$24.99", "Synced")}
+            onClick={simularPagoCosmos}
+            disabled={simulandoPago}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-[6px] text-xs font-bold bg-[#095a86] hover:bg-[#0b6fa5] text-white transition-all shadow-sm cursor-pointer"
           >
             <i className="fa-solid fa-bolt"></i>
-            Simular pago
+            {simulandoPago ? "Creando intent..." : "Simular pago"}
           </button>
         </div>
       </div>
+
+      {pagoCosmos && (
+        <div className="p-4 rounded-[12px] border border-emerald-500/30 bg-emerald-500/5 text-left">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div>
+              <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Intent Cosmos listo</h3>
+              <p className="text-[11px] text-[var(--text-secondary)]">
+                Red: {pagoCosmos.network} · ID: {pagoCosmos.id}
+              </p>
+            </div>
+            {pagoCosmos.uri && (
+              <a
+                href={pagoCosmos.uri}
+                className="px-3 py-2 rounded-[6px] bg-[#095a86] text-white text-xs font-bold"
+              >
+                Abrir wallet
+              </a>
+            )}
+          </div>
+          {pagoCosmos.qr && (
+            <img src={pagoCosmos.qr} alt="QR del pago Cosmos" className="w-40 h-40 bg-white p-2 rounded" />
+          )}
+        </div>
+      )}
 
       {/* Barra de credenciales rápidas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

@@ -24,10 +24,43 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 To learn more about Next.js, take a look at the following resources:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Cosmos Pay para webstores
+
+Configura estas variables en el servidor:
+
+```env
+COSMOS_PAY_API_KEY=dv_...
+WEBSTORE_API_KEY=una-clave-privada-por-webstore
+WEBSTORE_ALLOWED_ORIGIN=https://tu-webstore.example
+```
+
+Una webstore crea un pago llamando al backend, nunca exponiendo `COSMOS_PAY_API_KEY`:
+
+```ts
+const response = await fetch("https://api.tu-plataforma.example/api/payments/create", {
+	method: "POST",
+	headers: {
+		"Content-Type": "application/json",
+		"X-Store-Key": process.env.WEBSTORE_API_KEY,
+	},
+	body: JSON.stringify({
+		destination: "G...CUENTA_MERCHANT",
+		amount: "10",
+		currency: "XLM",
+		description: "Orden #1001",
+		memo: "1001",
+	}),
+});
+
+const { payment } = await response.json();
+// payment.uri y payment.qr se muestran en el checkout.
+```
+
+Después de que el cliente complete el pago con Freighter, xBull, Rabet, LOBSTR o Albedo,
+la webstore valida el `txHash` con `POST /api/payments/{payment.id}/validate` y el mismo
+header `X-Store-Key`.
 
 ## Deploy on Vercel
 

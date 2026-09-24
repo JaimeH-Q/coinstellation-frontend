@@ -602,7 +602,7 @@ export default function PaginaLogin() {
                     value={correoOlvido}
                     onChange={(e) => setCorreoOlvido(e.target.value)}
                     required
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[#095a86] transition-colors"
+                    className="w-full px-3 py-2 rounded-lg border border-(--border-color) bg-(--bg-main) text-(--text-primary) text-sm focus:outline-none focus:border-[#095a86] transition-colors"
                   />
                 </div>
 
