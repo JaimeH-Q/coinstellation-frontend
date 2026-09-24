@@ -36,9 +36,11 @@ export default function SeccionApi() {
   const [transacciones, setTransacciones] = useState<Transaccion[]>(transaccionesIniciales);
   const [copiadoKey, setCopiadoKey] = useState(false);
   const [copiadoCodigo, setCopiadoCodigo] = useState(false);
+  const [copiadoUrlPago, setCopiadoUrlPago] = useState(false);
   const [mensajeToast, setMensajeToast] = useState<string | null>(null);
   const [simulandoPago, setSimulandoPago] = useState(false);
   const [pagoCosmos, setPagoCosmos] = useState<CosmosPaymentResponse | null>(null);
+  const [walletCreador, setWalletCreador] = useState("");
 
   const mostrarToast = (msg: string) => {
     setMensajeToast(msg);
@@ -59,6 +61,11 @@ export default function SeccionApi() {
   };
 
   const simularPagoCosmos = async () => {
+    if (!walletCreador.trim()) {
+      mostrarToast("Introduce la wallet Stellar pública del creador.");
+      return;
+    }
+
     setSimulandoPago(true);
     setPagoCosmos(null);
 
@@ -67,10 +74,10 @@ export default function SeccionApi() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          destination: walletCreador.trim(),
           amount: "24.99",
           currency: "XLM",
           description: "Cosmic Pass V2 (simulación)",
-          memo: `demo-${Date.now()}`,
         }),
       });
       const data: { payment?: CosmosPaymentResponse; error?: string } = await response.json();
@@ -89,7 +96,7 @@ export default function SeccionApi() {
     }
   };
 
-  const copiarAlPortapapeles = async (texto: string, tipo: "key" | "code") => {
+  const copiarAlPortapapeles = async (texto: string, tipo: "key" | "code" | "paymentUrl") => {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(texto);
@@ -97,11 +104,20 @@ export default function SeccionApi() {
       if (tipo === "key") {
         setCopiadoKey(true);
         setTimeout(() => setCopiadoKey(false), 2000);
-      } else {
+      } else if (tipo === "code") {
         setCopiadoCodigo(true);
         setTimeout(() => setCopiadoCodigo(false), 2000);
+      } else {
+        setCopiadoUrlPago(true);
+        setTimeout(() => setCopiadoUrlPago(false), 2000);
       }
-      mostrarToast(tipo === "key" ? "Clave API copiada al portapapeles" : "Código SDK copiado");
+      mostrarToast(
+        tipo === "key"
+          ? "Clave API copiada al portapapeles"
+          : tipo === "code"
+            ? "Código SDK copiado"
+            : "URL de pago copiada al portapapeles",
+      );
     } catch {
       mostrarToast("No se pudo copiar al portapapeles");
     }
@@ -128,6 +144,14 @@ export default function SeccionApi() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={walletCreador}
+            onChange={(event) => setWalletCreador(event.target.value)}
+            placeholder="Wallet creador: G..."
+            aria-label="Wallet Stellar pública del creador"
+            className="w-52 px-3 py-2 rounded-[6px] border border-[var(--border-color)] bg-[var(--bg-card)] text-[11px] font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[#095a86]"
+          />
           <button
             type="button"
             onClick={simularPagoCosmos}
@@ -160,6 +184,34 @@ export default function SeccionApi() {
           </div>
           {pagoCosmos.qr && (
             <img src={pagoCosmos.qr} alt="QR del pago Cosmos" className="w-40 h-40 bg-white p-2 rounded" />
+          )}
+          {pagoCosmos.uri && (
+            <div className="mt-4 rounded-[8px] border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <p className="text-[11px] font-extrabold text-[var(--text-primary)]">URL de pago</p>
+                  <p className="text-[10px] text-[var(--text-secondary)]">
+                    Copiala y pegala en tu wallet Stellar si el botón no la abre automáticamente.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copiarAlPortapapeles(pagoCosmos.uri ?? "", "paymentUrl")}
+                  className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[5px] border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-hover)] text-[11px] font-bold text-[var(--text-primary)]"
+                >
+                  <i className={`fa-solid ${copiadoUrlPago ? "fa-check text-emerald-500" : "fa-copy"}`}></i>
+                  {copiadoUrlPago ? "Copiada" : "Copiar"}
+                </button>
+              </div>
+              <input
+                type="text"
+                readOnly
+                value={pagoCosmos.uri}
+                aria-label="URL de pago Cosmos"
+                onFocus={(event) => event.currentTarget.select()}
+                className="w-full min-w-0 px-3 py-2 rounded-[5px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[10px] font-mono text-[var(--text-secondary)] outline-none focus:border-[#095a86]"
+              />
+            </div>
           )}
         </div>
       )}

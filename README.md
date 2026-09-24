@@ -50,13 +50,34 @@ const response = await fetch("https://api.tu-plataforma.example/api/payments/cre
 		amount: "10",
 		currency: "XLM",
 		description: "Orden #1001",
-		memo: "1001",
 	}),
 });
 
 const { payment } = await response.json();
 // payment.uri y payment.qr se muestran en el checkout.
 ```
+
+También puedes crear el pago desde cualquier backend externo con `curl`:
+
+```bash
+curl -X POST https://tu-plataforma.example/api/payments/create \
+	-H "Content-Type: application/json" \
+	-H "X-Store-Key: tu-clave-de-webstore" \
+	-d '{
+		"destination": "G...WALLET_PUBLICA_DEL_CREADOR",
+		"amount": "24.99",
+		"currency": "XLM",
+		"description": "Orden #1001",
+	}'
+```
+
+`destination` es obligatorio y debe ser la wallet pública Stellar del creador. La respuesta
+incluye `payment.id`, `payment.memo`, `payment.uri` y `payment.qr`. El backend genera
+`payment.memo` como un `MEMO_ID` numérico para correlacionar la orden. Si falta `destination`, el endpoint
+responde `422` y no crea ningún intent.
+
+La cabecera `X-Store-Key` debe enviarse desde el backend externo; no la incluyas en código
+que se ejecute directamente en el navegador.
 
 Después de que el cliente complete el pago con Freighter, xBull, Rabet, LOBSTR o Albedo,
 la webstore valida el `txHash` con `POST /api/payments/{payment.id}/validate` y el mismo

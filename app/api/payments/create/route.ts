@@ -16,7 +16,7 @@ export async function POST(request: Request) {
 
   if (!isCreatePaymentBody(body)) {
     return Response.json(
-      { error: "amount and currency are required with valid types." },
+      { error: "creator wallet, amount and currency are required with valid types." },
       { status: 422 },
     );
   }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return Response.json({ payment }, { status: 201, headers: corsHeaders() });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cosmos Pay is unavailable.";
-    const status = message.includes("COSMOS_PAY") || message.includes("COSMOS_MERCHANT") ? 503 : 502;
+    const status = message.includes("COSMOS_PAY") ? 503 : 502;
 
     return Response.json({ error: message }, { status, headers: corsHeaders() });
   }
@@ -49,13 +49,13 @@ function isCreatePaymentBody(value: unknown): value is Parameters<typeof createC
   const body = value as Record<string, unknown>;
 
   return (
-    (body.destination === undefined || (typeof body.destination === "string" && body.destination.trim().length > 0)) &&
+    typeof body.destination === "string" &&
+    body.destination.trim().length > 0 &&
     typeof body.amount === "string" &&
     /^\d+(\.\d+)?$/.test(body.amount) &&
     Number(body.amount) > 0 &&
     typeof body.currency === "string" &&
     body.currency.trim().length > 0 &&
-    (body.memo === undefined || typeof body.memo === "string") &&
     (body.description === undefined || typeof body.description === "string") &&
     (body.callback === undefined || typeof body.callback === "string")
   );

@@ -1,11 +1,11 @@
 import { Assets, Client } from "@cosmosapp/pay_sdk";
 
 export interface CreateCosmosPaymentInput {
-  destination?: string;
+  /** Public Stellar address of the webstore owner. */
+  destination: string;
   amount: string;
   currency: string;
   description?: string;
-  memo?: string;
   callback?: string;
 }
 
@@ -34,17 +34,18 @@ function resolveAsset(currency: string) {
 
 /** Crea el intent en Cosmos sin exponer la API key al navegador. */
 export async function createCosmosPayment(input: CreateCosmosPaymentInput) {
-  const destination = input.destination?.trim() || process.env.COSMOS_MERCHANT_ADDRESS;
+  const destination = input.destination.trim();
+  const memo = createMemoId();
 
   if (!destination) {
-    throw new Error("COSMOS_MERCHANT_ADDRESS is not configured.");
+    throw new Error("The webstore creator's Stellar wallet is required.");
   }
 
   const intent = await getCosmosClient().paymentIntents.createPay({
     destination,
     amount: input.amount,
     asset: resolveAsset(input.currency),
-    ...(input.memo ? { memo: input.memo.trim() } : {}),
+    memo,
     ...(input.description ? { msg: input.description.trim() } : {}),
     ...(input.callback ? { callback: input.callback.trim() } : {}),
   });
@@ -56,6 +57,7 @@ export async function createCosmosPayment(input: CreateCosmosPaymentInput) {
     destination: intent.destination,
     amount: intent.amount,
     asset: intent.asset,
+    memo: intent.memo,
     uri: intent.uri,
     qr: intent.qr,
     createdAt: intent.createdAt,
@@ -71,4 +73,8 @@ export async function validateCosmosPayment(id: string, txHash: string) {
     reason: outcome.reason,
     paymentIntent: outcome.paymentIntent,
   };
+}
+
+function createMemoId(): string {
+  return String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
 }
