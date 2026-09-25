@@ -108,12 +108,13 @@ export default function PaginaLogin() {
 
     try {
       setCargando(true);
-      const res = await fetch("/api/users", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: correo.trim(),
           password: contrasena,
+          remember: recuerdame,
         }),
       });
 
@@ -124,9 +125,9 @@ export default function PaginaLogin() {
         return;
       }
 
-      // Guardamos la sesión activa
-      if (typeof window !== "undefined" && data.user) {
-        localStorage.setItem("usuario_sesion", JSON.stringify(data.user));
+      // La sesión vive en una cookie httpOnly que puso el servidor; acá solo recordamos el correo.
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("usuario_sesion");
         sessionStorage.removeItem("correo_reciente");
 
         if (recuerdame) {
@@ -138,7 +139,14 @@ export default function PaginaLogin() {
         }
       }
 
-      router.push("/dashboard");
+      // Solo se aceptan rutas internas para evitar redirecciones abiertas.
+      const siguiente = new URLSearchParams(window.location.search).get("next");
+      const destino =
+        siguiente && siguiente.startsWith("/") && !siguiente.startsWith("//")
+          ? siguiente
+          : "/dashboard";
+      router.replace(destino);
+      router.refresh();
     } catch {
       setErrorMsg("Hubo un error de conexión al iniciar sesión. Inténtalo de nuevo.");
     } finally {
@@ -512,14 +520,6 @@ export default function PaginaLogin() {
 
           {/* Alternar entre Iniciar Sesión y Registrarse */}
           <div className="mt-6 pt-4 border-t border-[var(--border-subtle)] text-center flex flex-col items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] hover:underline"
-            >
-              Ir directamente al Dashboard
-              <i className="fa-solid fa-arrow-right text-[10px]"></i>
-            </Link>
-
             {modo === "login" ? (
               <p className="text-xs text-[var(--text-secondary)]">
                 ¿No tienes cuenta?{" "}

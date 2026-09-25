@@ -1,7 +1,6 @@
 import {
   getUserById,
   registerUser,
-  verifyCredentials,
   type User,
 } from "@/backend/users/UserRegister";
 
@@ -53,8 +52,8 @@ export async function GET(request: Request) {
 /**
  * POST /api/users
  *
- * Para registrar, enviar: { name, email, password, confirmPassword?, termsAccepted? }
- * Para loguear, enviar: { email, password }
+ * Registra un usuario: { name, email, password, confirmPassword?, termsAccepted? }
+ * El inicio de sesión está en POST /api/auth/login.
  */
 export async function POST(request: Request) {
   let body: UserRequestBody;
@@ -76,27 +75,6 @@ export async function POST(request: Request) {
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
-
-  // Flujo de Inicio de Sesión (Login)
-  if (body.name === undefined) {
-    if (!email || !password) {
-      return Response.json(
-        { error: "El correo y la contraseña son obligatorios." },
-        { status: 422 },
-      );
-    }
-
-    const user = await verifyCredentials({ email, password });
-
-    if (!user) {
-      return Response.json(
-        { error: "Correo o contraseña incorrectos." },
-        { status: 401 },
-      );
-    }
-
-    return Response.json({ user: toPublicUser(user) });
-  }
 
   // Flujo de Registro (Register)
   const name = typeof body.name === "string" ? body.name.trim() : "";

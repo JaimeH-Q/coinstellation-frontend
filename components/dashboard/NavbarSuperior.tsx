@@ -3,23 +3,25 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { UsuarioSesion } from "@/app/dashboard/DashboardShell";
 
 interface NavbarSuperiorProps {
   seccionActiva: string;
+  usuario: UsuarioSesion;
   esModoOscuro: boolean;
   alAlternarModoOscuro: () => void;
 }
 
 export default function NavbarSuperior({
   seccionActiva,
+  usuario,
   esModoOscuro,
   alAlternarModoOscuro,
 }: NavbarSuperiorProps) {
   const router = useRouter();
 
-  // Estados de usuario
-  const [nombreUsuario, setNombreUsuario] = useState("Usuario");
-  const [correoUsuario, setCorreoUsuario] = useState("usuario@coinstellation.com");
+  const nombreUsuario = usuario.name;
+  const correoUsuario = usuario.email;
 
   // Estados de menús emergentes
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
@@ -27,22 +29,6 @@ export default function NavbarSuperior({
 
   const refMenuUsuario = useRef<HTMLDivElement>(null);
   const refMenuNotificaciones = useRef<HTMLDivElement>(null);
-
-  // Carga de datos de sesión del usuario
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const guardado = localStorage.getItem("usuario_sesion");
-      if (guardado) {
-        try {
-          const user = JSON.parse(guardado);
-          if (user.name) setNombreUsuario(user.name);
-          if (user.email) setCorreoUsuario(user.email);
-        } catch {
-          // ignore
-        }
-      }
-    }
-  }, []);
 
   // Cierra menús al hacer clic fuera o pulsar Escape
   useEffect(() => {
@@ -80,11 +66,13 @@ export default function NavbarSuperior({
       .join("") || "CO";
 
   // Cerrar sesión
-  const cerrarSesion = () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("usuario_sesion");
+  const cerrarSesion = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/login");
+      router.refresh();
     }
-    router.push("/login");
   };
 
   return (

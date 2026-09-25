@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { hashPassword, verifyPassword } from "../auth/password";
 import type {
   RegisterUserData,
   UpdateUserData,
@@ -26,7 +27,7 @@ export class PrismaUserDatabase {
         data: {
           name: data.name.trim(),
           email,
-          passwordHash: this.createToyPasswordHash(data.password),
+          passwordHash: await hashPassword(data.password),
         },
       });
 
@@ -77,8 +78,21 @@ export class PrismaUserDatabase {
   ): Promise<User | null> {
     const user = await this.findByEmail(credentials.email);
 
-    if (!user || user.passwordHash !== this.createToyPasswordHash(credentials.password)) {
+    if (!user) {
       return null;
+    }
+
+    const { valid, needsRehash } = await verifyPassword(credentials.password, user.passwordHash);
+
+    if (!valid) {
+      return null;
+    }
+
+    if (needsRehash) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: await hashPassword(credentials.password) },
+      });
     }
 
     return user;
@@ -89,7 +103,7 @@ export class PrismaUserDatabase {
       ...(data.name !== undefined ? { name: data.name.trim() } : {}),
       ...(data.email !== undefined ? { email: this.normalizeEmail(data.email) } : {}),
       ...(data.password !== undefined
-        ? { passwordHash: this.createToyPasswordHash(data.password) }
+        ? { passwordHash: await hashPassword(data.password) }
         : {}),
     };
 
@@ -121,10 +135,6 @@ export class PrismaUserDatabase {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
-  }
-
-  private createToyPasswordHash(password: string): string {
-    return `toy-hash:${password}`;
   }
 
   private toUser(user: {
