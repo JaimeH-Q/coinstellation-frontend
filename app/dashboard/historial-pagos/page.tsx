@@ -12,7 +12,7 @@ export default function HistorialPagosPage() {
   useEffect(() => {
     let vigente = true;
 
-    fetch("/api/payments?user_id=demo-user&count=50")
+    fetch("/api/payments?count=200", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error(`Error ${response.status}`);
         return response.json();

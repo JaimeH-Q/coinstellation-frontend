@@ -1,30 +1,53 @@
 import { validateCosmosPayment } from "@/backend/payments/CosmosPayments";
+import {
+  applyCosmosIntentUpdate,
+  findPaymentForUser,
+} from "@/backend/payments/PaymentsRepository";
+import { resolveMerchantUserId, webstoreCorsHeaders } from "@/backend/auth/merchant";
 
 export const runtime = "nodejs";
 
+const CORS_METHODS = "POST";
+
+/**
+ * Valida en Cosmos la transacción enviada por el comprador y actualiza el pago registrado.
+ * `id` es el ID del intent de Cosmos devuelto por /api/payments/create.
+ */
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isAuthorizedWebstore(request)) {
-    return Response.json({ error: "Invalid webstore API key." }, { status: 401, headers: corsHeaders() });
+  const headers = webstoreCorsHeaders(CORS_METHODS);
+  const userId = await resolveMerchantUserId(request);
+
+  if (!userId) {
+    return Response.json({ error: "Invalid webstore API key." }, { status: 401, headers });
   }
 
   const { id } = await params;
   const body = await readBody(request);
 
   if (!body || typeof body.txHash !== "string" || !body.txHash.trim()) {
-    return Response.json({ error: "txHash is required." }, { status: 422 });
+    return Response.json({ error: "txHash is required." }, { status: 422, headers });
   }
 
-  try {
-    return Response.json(
-      { payment: await validateCosmosPayment(id, body.txHash.trim()) },
-      { headers: corsHeaders() },
-    );
-  } catch {
-    return Response.json({ error: "Unable to validate the Cosmos payment." }, { status: 502 });
+  if (!(await findPaymentForUser(userId, id))) {
+    return Response.json({ error: "Payment not found." }, { status: 404, headers });
   }
+
+  let outcome: Awaited<ReturnType<typeof validateCosmosPayment>>;
+
+  try {
+    outcome = await validateCosmosPayment(id, body.txHash.trim());
+  } catch {
+    return Response.json({ error: "Unable to validate the Cosmos payment." }, { status: 502, headers });
+  }
+
+  const record = outcome.paymentIntent
+    ? await applyCosmosIntentUpdate(outcome.paymentIntent)
+    : await findPaymentForUser(userId, id);
+
+  return Response.json({ payment: outcome, record }, { headers });
 }
 
 async function readBody(request: Request): Promise<{ txHash?: unknown } | null> {
@@ -36,24 +59,6 @@ async function readBody(request: Request): Promise<{ txHash?: unknown } | null> 
   }
 }
 
-function corsHeaders(): HeadersInit {
-  return {
-    "Access-Control-Allow-Origin": process.env.WEBSTORE_ALLOWED_ORIGIN ?? "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Store-Key",
-  };
-}
-
 export function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders() });
-}
-
-function isAuthorizedWebstore(request: Request): boolean {
-  const expectedKey = process.env.WEBSTORE_API_KEY;
-
-  if (!expectedKey) {
-    return process.env.NODE_ENV !== "production";
-  }
-
-  return request.headers.get("X-Store-Key") === expectedKey;
+  return new Response(null, { status: 204, headers: webstoreCorsHeaders(CORS_METHODS) });
 }

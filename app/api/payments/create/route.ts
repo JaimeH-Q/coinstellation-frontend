@@ -1,36 +1,67 @@
 import { createCosmosPayment } from "@/backend/payments/CosmosPayments";
+import { recordCreatedPayment } from "@/backend/payments/PaymentsRepository";
+import { resolveMerchantUserId, webstoreCorsHeaders } from "@/backend/auth/merchant";
 
 export const runtime = "nodejs";
 
-/** Crea un intent SEP-7 para que una webstore externa pueda mostrar su checkout. */
+const CORS_METHODS = "POST";
+
+interface CreatePaymentBody {
+  destination: string;
+  amount: string;
+  currency: string;
+  description?: string;
+  callback?: string;
+  reference?: string;
+  packageId?: string;
+}
+
+/**
+ * Crea un intent SEP-7 en Cosmos Pay y lo registra como pago pendiente del comerciante.
+ * Autenticación: header X-Store-Key (API key del usuario) o sesión del dashboard.
+ */
 export async function POST(request: Request) {
-  if (!isAuthorizedWebstore(request)) {
-    return Response.json({ error: "Invalid webstore API key." }, { status: 401, headers: corsHeaders() });
+  const headers = webstoreCorsHeaders(CORS_METHODS);
+  const userId = await resolveMerchantUserId(request);
+
+  if (!userId) {
+    return Response.json({ error: "Invalid webstore API key." }, { status: 401, headers });
   }
 
   const body = await readRequestBody(request);
 
   if (body === null) {
-    return Response.json({ error: "Body must be a valid JSON object." }, { status: 400 });
+    return Response.json({ error: "Body must be a valid JSON object." }, { status: 400, headers });
   }
 
   if (!isCreatePaymentBody(body)) {
     return Response.json(
       { error: "creator wallet, amount and currency are required with valid types." },
-      { status: 422 },
+      { status: 422, headers },
     );
   }
 
-  try {
-    const payment = await createCosmosPayment(body);
+  let payment: Awaited<ReturnType<typeof createCosmosPayment>>;
 
-    return Response.json({ payment }, { status: 201, headers: corsHeaders() });
+  try {
+    payment = await createCosmosPayment(body);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cosmos Pay is unavailable.";
     const status = message.includes("COSMOS_PAY") ? 503 : 502;
 
-    return Response.json({ error: message }, { status, headers: corsHeaders() });
+    return Response.json({ error: message }, { status, headers });
   }
+
+  const record = await recordCreatedPayment({
+    userId,
+    intent: payment,
+    currency: body.currency,
+    description: body.description,
+    reference: body.reference,
+    packageId: body.packageId,
+  });
+
+  return Response.json({ payment, record }, { status: 201, headers });
 }
 
 async function readRequestBody(request: Request): Promise<unknown | null> {
@@ -41,7 +72,11 @@ async function readRequestBody(request: Request): Promise<unknown | null> {
   }
 }
 
-function isCreatePaymentBody(value: unknown): value is Parameters<typeof createCosmosPayment>[0] {
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === "string";
+}
+
+function isCreatePaymentBody(value: unknown): value is CreatePaymentBody {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -56,29 +91,13 @@ function isCreatePaymentBody(value: unknown): value is Parameters<typeof createC
     Number(body.amount) > 0 &&
     typeof body.currency === "string" &&
     body.currency.trim().length > 0 &&
-    (body.description === undefined || typeof body.description === "string") &&
-    (body.callback === undefined || typeof body.callback === "string")
+    isOptionalString(body.description) &&
+    isOptionalString(body.callback) &&
+    isOptionalString(body.reference) &&
+    isOptionalString(body.packageId)
   );
 }
 
-function corsHeaders(): HeadersInit {
-  return {
-    "Access-Control-Allow-Origin": process.env.WEBSTORE_ALLOWED_ORIGIN ?? "*",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Store-Key",
-  };
-}
-
 export function OPTIONS() {
-  return new Response(null, { status: 204, headers: corsHeaders() });
-}
-
-function isAuthorizedWebstore(request: Request): boolean {
-  const expectedKey = process.env.WEBSTORE_API_KEY;
-
-  if (!expectedKey) {
-    return process.env.NODE_ENV !== "production";
-  }
-
-  return request.headers.get("X-Store-Key") === expectedKey;
+  return new Response(null, { status: 204, headers: webstoreCorsHeaders(CORS_METHODS) });
 }

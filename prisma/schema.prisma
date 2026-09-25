@@ -15,6 +15,7 @@ model User {
   updatedAt    DateTime @updatedAt
   apiKey       ApiKey?
   sessions     Session[]
+  payments     Payment[]
 }
 
 model ApiKey {
@@ -34,4 +35,36 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+/// Pago recibido por un usuario (comerciante) a través de un intent de Cosmos Pay.
+model Payment {
+  id             String    @id @default(uuid())
+  userId         String
+  /// ID del intent en Cosmos Pay; se usa para conciliar con Cosmos y sus webhooks.
+  cosmosIntentId String    @unique
+  /// pending | processing | completed | failed | cancelled | expired
+  status         String    @default("pending")
+  amount         String
+  currency       String
+  network        String
+  /// Wallet Stellar que recibe el pago.
+  destination    String
+  /// MEMO_ID de la transacción; permite encontrar el pago en la blockchain.
+  memo           String?
+  description    String?
+  /// Referencia libre de la tienda (p. ej. número de orden).
+  reference      String?
+  packageId      String?
+  /// Hash de la transacción Stellar una vez pagada.
+  txHash         String?   @unique
+  /// Wallet que pagó.
+  sourceAccount  String?
+  confirmedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
 }

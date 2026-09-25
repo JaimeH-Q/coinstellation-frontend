@@ -1,4 +1,4 @@
-import { Assets, Client } from "@cosmosapp/pay_sdk";
+import { Assets, Client, Webhooks, type PaymentIntentData } from "@cosmosapp/pay_sdk";
 
 export interface CreateCosmosPaymentInput {
   /** Public Stellar address of the webstore owner. */
@@ -71,8 +71,28 @@ export async function validateCosmosPayment(id: string, txHash: string) {
     valid: outcome.valid,
     status: outcome.status,
     reason: outcome.reason,
-    paymentIntent: outcome.paymentIntent,
+    paymentIntent: outcome.paymentIntent ? outcome.paymentIntent.toJSON() : null,
   };
+}
+
+/** Consulta el estado actual de un intent en Cosmos Pay (para conciliar pagos pendientes). */
+export async function fetchCosmosPayment(id: string): Promise<PaymentIntentData> {
+  const intent = await getCosmosClient().paymentIntents.fetch(id);
+  return intent.toJSON();
+}
+
+/**
+ * Verifica la firma de un webhook de Cosmos Pay y devuelve el evento.
+ * Lanza un error si falta COSMOS_WEBHOOK_SECRET o la firma no es válida.
+ */
+export function constructCosmosWebhookEvent(rawBody: string, signatureHeader: string | null) {
+  const secret = process.env.COSMOS_WEBHOOK_SECRET;
+
+  if (!secret) {
+    throw new Error("COSMOS_WEBHOOK_SECRET is not configured.");
+  }
+
+  return Webhooks.constructEvent<PaymentIntentData>(rawBody, signatureHeader, secret);
 }
 
 function createMemoId(): string {

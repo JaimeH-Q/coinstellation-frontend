@@ -6,7 +6,7 @@ import TarjetaEstadistica from "@/components/dashboard/TarjetaEstadistica";
 import EstadoTiendas from "@/components/dashboard/EstadoTiendas";
 import GraficoLineasEvolucion from "@/components/dashboard/GraficoLineasEvolucion";
 import GraficoDonasMetodosYPaquetes from "@/components/dashboard/GraficoDonasMetodosYPaquetes";
-import type { Payment } from "@/backend/payments/PaymentsHistory";
+import { isPaymentCompleted, type Payment } from "@/backend/payments/PaymentsHistory";
 import type { TarjetaEstadisticaProps } from "@/components/dashboard/TarjetaEstadistica";
 import type { DatosGraficoLineas } from "@/components/dashboard/GraficoLineasEvolucion";
 import type { DatosDistribucion } from "@/components/dashboard/GraficoDonasMetodosYPaquetes";
@@ -21,18 +21,14 @@ const COLORES_ACTIVOS: Record<string, string> = {
 };
 const COLOR_DEFECTO_ACTIVO = "#10b981";
 
-const COLORES_PAQUETES: Record<string, string> = {
-  "package-basic": "#095a86",
-  "package-pro": "#8b5cf6",
-  "package-enterprise": "#ec4899",
-};
-const COLOR_DEFECTO_PAQUETE = "#10b981";
+const COLORES_PAQUETES = ["#095a86", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#0284c7"];
+const SIN_PAQUETE = "Sin paquete";
 
-const NOMBRES_PAQUETES: Record<string, string> = {
-  "package-basic": "Basic",
-  "package-pro": "Pro",
-  "package-enterprise": "Enterprise",
-};
+/** Formatea un monto; si todos los pagos usan el mismo activo, lo agrega como sufijo. */
+function formatearMonto(valor: number, moneda: string | null) {
+  const numero = valor.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return moneda ? `${numero} ${moneda}` : numero;
+}
 
 // ──────────── Función para computar todos los datos del dashboard ────────────
 
@@ -41,9 +37,11 @@ function computarDatosDashboard(pagos: Payment[]): {
   graficoLineas: DatosGraficoLineas;
   graficoDonas: DatosDistribucion;
 } {
-  const completados = pagos.filter((p) => p.status === "completed" || p.status === "confirmed");
-  const totalIngresos = completados.reduce((s, p) => s + parseFloat(p.finalAmount), 0);
-  const totalFees = pagos.reduce((s, p) => s + parseFloat(p.fees), 0);
+  const completados = pagos.filter(isPaymentCompleted);
+  const abiertos = pagos.filter((p) => p.status === "pending" || p.status === "processing");
+  const totalIngresos = completados.reduce((s, p) => s + parseFloat(p.amount), 0);
+  const monedas = new Set(completados.map((p) => p.asset.currency));
+  const moneda = monedas.size <= 1 ? ([...monedas][0] ?? null) : null;
   const valorMedio = completados.length > 0 ? totalIngresos / completados.length : 0;
   const tasaConversion = pagos.length > 0 ? (completados.length / pagos.length) * 100 : 0;
 
@@ -51,31 +49,31 @@ function computarDatosDashboard(pagos: Payment[]): {
   const kpis: TarjetaEstadisticaProps[] = [
     {
       titulo: "Ingresos netos",
-      valor: `$${totalIngresos.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      valor: formatearMonto(totalIngresos, moneda),
       tendencia: `${completados.length} txs`,
-      descripcion: "pagos completados/confirmados",
-      ayuda: "Suma total de los montos finales (monto + fee) de todos los pagos con estado completado o confirmado.",
+      descripcion: moneda ? "pagos completados" : "pagos completados (varios activos)",
+      ayuda: "Suma de los montos de todos los pagos que Cosmos Pay confirmó como completados.",
     },
     {
       titulo: "Pedidos totales",
       valor: pagos.length.toString(),
       tendencia: `${completados.length} exitosos`,
-      descripcion: "del backend en tiempo real",
-      ayuda: "Cantidad total de pagos registrados en el backend, incluyendo pendientes, fallidos y cancelados.",
+      descripcion: "registrados en tu cuenta",
+      ayuda: "Cantidad total de pagos creados con tu cuenta, incluyendo pendientes, fallidos, cancelados y expirados.",
     },
     {
       titulo: "Valor medio del pedido",
-      valor: `$${valorMedio.toFixed(2)}`,
-      tendencia: `Fee total: $${totalFees.toFixed(2)}`,
+      valor: formatearMonto(valorMedio, moneda),
+      tendencia: `${abiertos.length} pendientes`,
       descripcion: "ticket promedio completados",
-      ayuda: "Promedio del monto final por cada pago completado o confirmado. Indica el ticket medio de compra.",
+      ayuda: "Promedio del monto por cada pago completado. Indica el ticket medio de compra.",
     },
     {
       titulo: "Tasa de conversión",
       valor: `${tasaConversion.toFixed(1)}%`,
       tendencia: `${pagos.length - completados.length} no completados`,
       descripcion: "completados vs total",
-      ayuda: "Porcentaje de pagos que llegaron a estado completado o confirmado respecto al total de pagos registrados.",
+      ayuda: "Porcentaje de pagos que llegaron a estado completado respecto al total de pagos registrados.",
     },
   ];
 
@@ -84,7 +82,7 @@ function computarDatosDashboard(pagos: Payment[]): {
   for (const p of pagos) {
     const dia = new Date(p.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
     const prev = porDia.get(dia) ?? { ingresos: 0, pedidos: 0 };
-    prev.ingresos += parseFloat(p.finalAmount);
+    if (isPaymentCompleted(p)) prev.ingresos += parseFloat(p.amount);
     prev.pedidos += 1;
     porDia.set(dia, prev);
   }
@@ -99,40 +97,41 @@ function computarDatosDashboard(pagos: Payment[]): {
     etiquetas: entradasOrdenadas.map(([dia]) => dia),
     ingresos: entradasOrdenadas.map(([, v]) => Math.round(v.ingresos * 100) / 100),
     pedidos: entradasOrdenadas.map(([, v]) => v.pedidos),
-    totalIngresos: `$${totalIngresos.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    totalIngresos: formatearMonto(totalIngresos, moneda),
     totalPedidos: pagos.length,
   };
 
   // ── Gráfico de Donas: por Activo (métodos de pago) ──
   const porActivo = new Map<string, number>();
   for (const p of completados) {
-    const key = p.asset.network ? `${p.asset.currency} (${p.asset.network})` : p.asset.currency;
-    porActivo.set(key, (porActivo.get(key) ?? 0) + parseFloat(p.finalAmount));
+    const key = `${p.asset.currency} (${p.asset.network})`;
+    porActivo.set(key, (porActivo.get(key) ?? 0) + parseFloat(p.amount));
   }
   const totalActivos = [...porActivo.values()].reduce((s, v) => s + v, 0) || 1;
   const metodosPago = [...porActivo.entries()].map(([nombre, monto]) => ({
     nombre,
     porcentaje: Math.round((monto / totalActivos) * 100),
-    monto: `$${monto.toFixed(2)}`,
+    monto: formatearMonto(monto, nombre.split(" ")[0]),
     color: COLORES_ACTIVOS[nombre.split(" ")[0]] ?? COLOR_DEFECTO_ACTIVO,
   }));
 
   // ── Gráfico de Donas: por Paquete ──
   const porPaquete = new Map<string, number>();
   for (const p of completados) {
-    porPaquete.set(p.packageId, (porPaquete.get(p.packageId) ?? 0) + parseFloat(p.finalAmount));
+    const paquete = p.packageId ?? SIN_PAQUETE;
+    porPaquete.set(paquete, (porPaquete.get(paquete) ?? 0) + parseFloat(p.amount));
   }
   const totalPaquetes = [...porPaquete.values()].reduce((s, v) => s + v, 0) || 1;
-  const categoriasPaquetes = [...porPaquete.entries()].map(([id, monto]) => ({
-    nombre: NOMBRES_PAQUETES[id] ?? id,
+  const categoriasPaquetes = [...porPaquete.entries()].map(([nombre, monto], indice) => ({
+    nombre,
     porcentaje: Math.round((monto / totalPaquetes) * 100),
-    monto: `$${monto.toFixed(2)}`,
-    color: COLORES_PAQUETES[id] ?? COLOR_DEFECTO_PAQUETE,
+    monto: formatearMonto(monto, moneda),
+    color: COLORES_PAQUETES[indice % COLORES_PAQUETES.length],
   }));
 
   const graficoDonas: DatosDistribucion = {
-    metodosPago: metodosPago.length > 0 ? metodosPago : [{ nombre: "Sin datos", porcentaje: 100, monto: "$0.00", color: "#94a3b8" }],
-    categoriasPaquetes: categoriasPaquetes.length > 0 ? categoriasPaquetes : [{ nombre: "Sin datos", porcentaje: 100, monto: "$0.00", color: "#94a3b8" }],
+    metodosPago: metodosPago.length > 0 ? metodosPago : [{ nombre: "Sin datos", porcentaje: 100, monto: "0.00", color: "#94a3b8" }],
+    categoriasPaquetes: categoriasPaquetes.length > 0 ? categoriasPaquetes : [{ nombre: "Sin datos", porcentaje: 100, monto: "0.00", color: "#94a3b8" }],
   };
 
   return { kpis, graficoLineas, graficoDonas };
@@ -158,7 +157,7 @@ export default function DashboardPage() {
   useEffect(() => {
     let vigente = true;
 
-    fetch("/api/payments?user_id=demo-user&count=50")
+    fetch("/api/payments?count=200", { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error(`Error ${response.status}`);
         return response.json();
@@ -190,7 +189,7 @@ export default function DashboardPage() {
                 <div>
                   <h1 className="page-title text-2xl font-extrabold">Dashboard</h1>
                   <p className="page-subtitle text-xs sm:text-sm">
-                    Estado global del ecosistema — datos en tiempo real desde <code className="text-[10px] bg-[var(--bg-card)] px-1 py-0.5 rounded border border-[var(--border-color)]">/api/payments</code>
+                    Pagos reales de tu cuenta, conciliados con Cosmos Pay desde <code className="text-[10px] bg-[var(--bg-card)] px-1 py-0.5 rounded border border-[var(--border-color)]">/api/payments</code>
                   </p>
                 </div>
                 <button

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import type { Payment } from "@/backend/payments/PaymentsHistory";
+import { isPaymentCompleted, type Payment } from "@/backend/payments/PaymentsHistory";
 
 interface SeccionHistorialPagosProps {
   pagos: Payment[];
@@ -11,12 +11,11 @@ interface SeccionHistorialPagosProps {
 
 const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   completed: { texto: "Completado", clase: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" },
-  confirmed: { texto: "Confirmado", clase: "bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/30" },
   processing: { texto: "Procesando", clase: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30" },
   pending: { texto: "Pendiente", clase: "bg-slate-500/10 text-slate-500 border-slate-500/30" },
   failed: { texto: "Fallido", clase: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30" },
   cancelled: { texto: "Cancelado", clase: "bg-neutral-500/10 text-neutral-500 border-neutral-500/30" },
-  refunded: { texto: "Reembolsado", clase: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/30" },
+  expired: { texto: "Expirado", clase: "bg-neutral-500/10 text-neutral-500 border-neutral-500/30" },
 };
 
 function BadgeEstado({ estado }: { estado: string }) {
@@ -28,6 +27,17 @@ function BadgeEstado({ estado }: { estado: string }) {
       {cfg.texto}
     </span>
   );
+}
+
+/** Texto que identifica qué se cobró: descripción, paquete o referencia de la tienda. */
+function conceptoPago(pago: Payment) {
+  return pago.description ?? pago.packageId ?? pago.reference ?? "—";
+}
+
+function urlTransaccion(pago: Payment) {
+  if (!pago.transactionId) return null;
+  const red = /test/i.test(pago.asset.network) ? "testnet" : "public";
+  return `https://stellar.expert/explorer/${red}/tx/${pago.transactionId}`;
 }
 
 function formatearFecha(iso: string) {
@@ -56,27 +66,40 @@ export default function SeccionHistorialPagos({
         filtroEstado === "todos"
           ? true
           : filtroEstado === "completados"
-          ? p.status === "completed" || p.status === "confirmed"
+          ? isPaymentCompleted(p)
           : p.status === filtroEstado;
 
       const coincideBusqueda =
         busqueda.trim() === ""
           ? true
-          : p.id.toLowerCase().includes(busqueda.toLowerCase()) ||
-            p.packageId.toLowerCase().includes(busqueda.toLowerCase()) ||
-            p.asset.currency.toLowerCase().includes(busqueda.toLowerCase());
+          : [
+              p.id,
+              p.cosmosIntentId,
+              p.description,
+              p.reference,
+              p.packageId,
+              p.asset.currency,
+              p.transactionId,
+            ].some((campo) => campo?.toLowerCase().includes(busqueda.trim().toLowerCase()));
 
       return coincideEstado && coincideBusqueda;
     });
   }, [pagos, filtroEstado, busqueda]);
 
-  const totalCompletados = pagos.filter(
-    (p) => p.status === "completed" || p.status === "confirmed"
-  ).length;
+  const completados = pagos.filter(isPaymentCompleted);
+  const totalCompletados = completados.length;
 
-  const totalFees = pagos
-    .reduce((s, p) => s + parseFloat(p.fees || "0"), 0)
-    .toFixed(2);
+  // Total cobrado agrupado por activo (no se suman XLM con USDC).
+  const totalesPorActivo = [
+    ...completados
+      .reduce(
+        (mapa, p) => mapa.set(p.asset.currency, (mapa.get(p.asset.currency) ?? 0) + parseFloat(p.amount)),
+        new Map<string, number>(),
+      )
+      .entries(),
+  ]
+    .map(([moneda, total]) => `${total.toFixed(2)} ${moneda}`)
+    .join(" · ");
 
   return (
     <div className="text-left">
@@ -137,7 +160,7 @@ export default function SeccionHistorialPagos({
             <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-muted)]"></i>
             <input
               type="text"
-              placeholder="Buscar por ID, paquete..."
+              placeholder="Buscar por ID, concepto, tx..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="pl-8 pr-3 py-1.5 text-xs rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#095a86] w-full sm:w-64"
@@ -151,27 +174,28 @@ export default function SeccionHistorialPagos({
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Paquete</th>
+                <th>Concepto</th>
                 <th>Monto</th>
-                <th>Fee</th>
-                <th>Total</th>
                 <th>Activo</th>
                 <th>Estado</th>
+                <th>Transacción</th>
                 <th>Fecha</th>
               </tr>
             </thead>
             <tbody>
               {cargandoPagos && pagos.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                  <td colSpan={7} className="py-8 text-center text-xs text-[var(--text-muted)]">
                     <i className="fa-solid fa-spinner fa-spin mr-2"></i>
                     Cargando pagos desde el backend...
                   </td>
                 </tr>
               ) : pagosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
-                    No se encontraron pagos con los filtros seleccionados.
+                  <td colSpan={7} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                    {pagos.length === 0
+                      ? "Todavía no recibiste pagos. Crea uno desde la sección API o con tu API key."
+                      : "No se encontraron pagos con los filtros seleccionados."}
                   </td>
                 </tr>
               ) : (
@@ -183,24 +207,36 @@ export default function SeccionHistorialPagos({
                     <td className="text-xs">
                       <span className="inline-flex items-center gap-1 font-semibold">
                         <i className="fa-solid fa-cube text-[10px] text-[#095a86]"></i>
-                        {pago.packageId}
+                        {conceptoPago(pago)}
                       </span>
                     </td>
-                    <td className="text-xs font-semibold">${pago.amount}</td>
-                    <td className="text-xs text-[var(--text-secondary)]">${pago.fees}</td>
-                    <td className="text-xs font-bold text-[var(--text-primary)]">${pago.finalAmount}</td>
+                    <td className="text-xs font-bold text-[var(--text-primary)]">{pago.amount}</td>
                     <td className="text-xs">
                       <span className="inline-flex items-center gap-1">
                         <span className="font-semibold">{pago.asset.currency}</span>
-                        {pago.asset.network && (
-                          <span className="text-[10px] text-[var(--text-muted)]">
-                            ({pago.asset.network})
-                          </span>
-                        )}
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          ({pago.asset.network})
+                        </span>
                       </span>
                     </td>
                     <td>
-                      <BadgeEstado estado={pago.status ?? "pending"} />
+                      <BadgeEstado estado={pago.status} />
+                    </td>
+                    <td className="text-xs font-mono">
+                      {urlTransaccion(pago) ? (
+                        <a
+                          href={urlTransaccion(pago) ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#095a86] hover:underline"
+                          title={pago.transactionId ?? undefined}
+                        >
+                          {pago.transactionId?.slice(0, 8)}…
+                          <i className="fa-solid fa-arrow-up-right-from-square ml-1 text-[9px]"></i>
+                        </a>
+                      ) : (
+                        <span className="text-[var(--text-muted)]">—</span>
+                      )}
                     </td>
                     <td className="text-xs text-[var(--text-secondary)]">
                       {formatearFecha(pago.createdAt)}
@@ -226,9 +262,11 @@ export default function SeccionHistorialPagos({
               </span>
             </div>
 
-            <div>
-              Total en fees: <strong className="text-[var(--text-primary)]">${totalFees}</strong>
-            </div>
+            {totalesPorActivo && (
+              <div>
+                Total cobrado: <strong className="text-[var(--text-primary)]">{totalesPorActivo}</strong>
+              </div>
+            )}
           </div>
         )}
       </div>

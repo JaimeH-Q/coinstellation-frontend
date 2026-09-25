@@ -1,6 +1,7 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import prisma from "@/backend/database/prisma";
 import { getCurrentUser } from "@/backend/auth/session";
+import { hashApiKey } from "@/backend/auth/merchant";
 
 export const runtime = "nodejs";
 
@@ -61,7 +62,7 @@ export async function POST(_request: Request, { params }: ApiKeyRouteContext) {
   }
 
   const apiKey = `cs_live_${randomBytes(32).toString("hex")}`;
-  const apiKeyHash = createHash("sha256").update(apiKey).digest("hex");
+  const apiKeyHash = hashApiKey(apiKey);
   const record = await prisma.apiKey.upsert({
     where: { userId: id },
     create: { userId: id, apiKeyHash },
