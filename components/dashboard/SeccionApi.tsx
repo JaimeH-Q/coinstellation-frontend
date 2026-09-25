@@ -310,7 +310,7 @@ export default function SeccionApi() {
         </div>
 
         {/* Base URL */}
-        <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
+        <div className="p-3.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
           <div className="overflow-hidden mr-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
               Endpoint Base
@@ -546,7 +546,7 @@ export default function SeccionApi() {
               Recupera el historial de transacciones, estados de liquidación y montos netos confirmados.
             </p>
             <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
-              ?user_id=demo-user&count=50
+              X-Store-Key · ?count=50&amp;status=completed
             </div>
           </div>
 
