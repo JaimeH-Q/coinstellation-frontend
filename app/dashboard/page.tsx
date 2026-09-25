@@ -118,7 +118,7 @@ function computarDatosDashboard(pagos: Payment[]): {
   // ── Gráfico de Donas: por Paquete ──
   const porPaquete = new Map<string, number>();
   for (const p of completados) {
-    const paquete = p.packageId ?? SIN_PAQUETE;
+    const paquete = p.packageName ?? SIN_PAQUETE;
     porPaquete.set(paquete, (porPaquete.get(paquete) ?? 0) + parseFloat(p.amount));
   }
   const totalPaquetes = [...porPaquete.values()].reduce((s, v) => s + v, 0) || 1;

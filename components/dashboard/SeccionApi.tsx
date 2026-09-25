@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useDashboardLayout } from "@/app/dashboard/DashboardShell";
+import type { PackageDTO } from "@/backend/packages/PackageTypes";
+import type { WalletDTO } from "@/backend/wallet/WalletTypes";
 
 interface Transaccion {
   id: string;
@@ -26,10 +28,10 @@ const SNIPPET_API = `const response = await fetch("${API_ENDPOINT}", {
     "X-Store-Key": "PEGA_AQUI_TU_API_KEY"
   },
   body: JSON.stringify({
+    packageId: "ID_DEL_PAQUETE",     // el monto y el activo salen del paquete
+    playerName: "Steve",             // reemplaza %p% en los comandos
     destination: "G...WALLET_PUBLICA",
-    amount: "24.99",
-    currency: "XLM",
-    description: "Orden #1001"
+    reference: "Orden #1001"
   })
 });
 
@@ -48,11 +50,42 @@ export default function SeccionApi() {
   const [simulandoPago, setSimulandoPago] = useState(false);
   const [pagoCosmos, setPagoCosmos] = useState<CosmosPaymentResponse | null>(null);
   const [walletCreador, setWalletCreador] = useState("");
+  const [paquetes, setPaquetes] = useState<PackageDTO[]>([]);
+  const [paqueteId, setPaqueteId] = useState("");
+  const [jugador, setJugador] = useState("");
+  const paqueteSeleccionado = paquetes.find((p) => p.id === paqueteId) ?? null;
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyExists, setApiKeyExists] = useState(false);
   const [cargandoApiKey, setCargandoApiKey] = useState(true);
   const [generandoApiKey, setGenerandoApiKey] = useState(false);
   const [errorApiKey, setErrorApiKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+
+    fetch("/api/packages", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : { packages: [] }))
+      .then((data: { packages?: PackageDTO[] }) => {
+        if (!vigente) return;
+        const lista = data.packages ?? [];
+        setPaquetes(lista);
+        setPaqueteId((actual) => actual || lista[0]?.id || "");
+      })
+      .catch(() => {});
+
+    // Precarga la wallet configurada en Billetera (sin pisar lo que el usuario ya escribió).
+    fetch("/api/wallet", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { wallet?: WalletDTO } | null) => {
+        const direccion = data?.wallet?.walletAddress;
+        if (vigente && direccion) setWalletCreador((actual) => actual || direccion);
+      })
+      .catch(() => {});
+
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   useEffect(() => {
     let vigente = true;
@@ -127,7 +160,15 @@ export default function SeccionApi() {
 
   const simularPagoCosmos = async () => {
     if (!walletCreador.trim()) {
-      mostrarToast("Introduce la wallet Stellar pública del creador.");
+      mostrarToast("Introduce la wallet Stellar pública del creador o configúrala en Billetera.");
+      return;
+    }
+    if (!paqueteSeleccionado) {
+      mostrarToast("Crea un paquete en la sección Paquetes para simular una compra.");
+      return;
+    }
+    if (!jugador.trim()) {
+      mostrarToast("Introduce el nombre del jugador que compra.");
       return;
     }
 
@@ -139,10 +180,10 @@ export default function SeccionApi() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          packageId: paqueteSeleccionado.id,
+          playerName: jugador.trim(),
           destination: walletCreador.trim(),
-          amount: "24.99",
-          currency: "XLM",
-          description: "Cosmic Pass V2 (simulación)",
+          reference: "Simulación desde el dashboard",
         }),
       });
       const data: { payment?: CosmosPaymentResponse; error?: string } = await response.json();
@@ -152,7 +193,11 @@ export default function SeccionApi() {
       }
 
       setPagoCosmos(data.payment);
-      agregarTransaccion("Cosmos Pay intent creado", "+$24.99", "Pending");
+      agregarTransaccion(
+        `${paqueteSeleccionado.name} para ${jugador.trim()}`,
+        `+${paqueteSeleccionado.price} ${paqueteSeleccionado.currency}`,
+        "Pending",
+      );
       mostrarToast("Intent Cosmos creado. Abre el enlace o escanea el QR para pagar.");
     } catch (error) {
       mostrarToast(error instanceof Error ? error.message : "No se pudo crear el pago Cosmos.");
@@ -216,7 +261,28 @@ export default function SeccionApi() {
             Gestión de credenciales, entorno interactivo y especificación de endpoints
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={paqueteId}
+            onChange={(event) => setPaqueteId(event.target.value)}
+            aria-label="Paquete a comprar"
+            className="w-44 px-3 py-2 rounded-[6px] border border-[var(--border-color)] bg-[var(--bg-card)] text-[11px] text-[var(--text-primary)] outline-none focus:border-[#095a86]"
+          >
+            {paquetes.length === 0 && <option value="">Sin paquetes</option>}
+            {paquetes.map((paquete) => (
+              <option key={paquete.id} value={paquete.id}>
+                {paquete.name} · {paquete.price} {paquete.currency}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            value={jugador}
+            onChange={(event) => setJugador(event.target.value)}
+            placeholder="Jugador: Steve"
+            aria-label="Nombre del jugador que compra"
+            className="w-32 px-3 py-2 rounded-[6px] border border-[var(--border-color)] bg-[var(--bg-card)] text-[11px] font-mono text-[var(--text-primary)] placeholder:text-[var(--text-muted)] outline-none focus:border-[#095a86]"
+          />
           <input
             type="text"
             value={walletCreador}
@@ -461,10 +527,12 @@ export default function SeccionApi() {
           >
             <div className="store-item">
               <div className="store-info">
-                <h4>Cosmic Pass V2</h4>
-                <p>Instant activation • Global access</p>
+                <h4>{paqueteSeleccionado?.name ?? "Sin paquetes"}</h4>
+                <p>{paqueteSeleccionado?.description ?? "Crea un paquete en la sección Paquetes."}</p>
               </div>
-              <strong className="price">$24.99 USD</strong>
+              <strong className="price">
+                {paqueteSeleccionado ? `${paqueteSeleccionado.price} ${paqueteSeleccionado.currency}` : "—"}
+              </strong>
             </div>
             <button
               type="button"

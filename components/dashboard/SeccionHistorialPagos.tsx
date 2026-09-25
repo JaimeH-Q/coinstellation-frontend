@@ -18,10 +18,11 @@ const ETIQUETA_ESTADO: Record<string, { texto: string; clase: string }> = {
   expired: { texto: "Expirado", clase: "bg-neutral-500/10 text-neutral-500 border-neutral-500/30" },
 };
 
-function BadgeEstado({ estado }: { estado: string }) {
+function BadgeEstado({ estado, motivo }: { estado: string; motivo?: string | null }) {
   const cfg = ETIQUETA_ESTADO[estado] ?? ETIQUETA_ESTADO.pending;
   return (
     <span
+      title={motivo ?? undefined}
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${cfg.clase}`}
     >
       {cfg.texto}
@@ -29,9 +30,9 @@ function BadgeEstado({ estado }: { estado: string }) {
   );
 }
 
-/** Texto que identifica qué se cobró: descripción, paquete o referencia de la tienda. */
+/** Texto que identifica qué se cobró: paquete, descripción o referencia de la tienda. */
 function conceptoPago(pago: Payment) {
-  return pago.description ?? pago.packageId ?? pago.reference ?? "—";
+  return pago.packageName ?? pago.description ?? pago.reference ?? "—";
 }
 
 function urlTransaccion(pago: Payment) {
@@ -77,7 +78,8 @@ export default function SeccionHistorialPagos({
               p.cosmosIntentId,
               p.description,
               p.reference,
-              p.packageId,
+              p.packageName,
+              p.playerName,
               p.asset.currency,
               p.transactionId,
             ].some((campo) => campo?.toLowerCase().includes(busqueda.trim().toLowerCase()));
@@ -160,7 +162,7 @@ export default function SeccionHistorialPagos({
             <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--text-muted)]"></i>
             <input
               type="text"
-              placeholder="Buscar por ID, concepto, tx..."
+              placeholder="Buscar por jugador, paquete, tx..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="pl-8 pr-3 py-1.5 text-xs rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[#095a86] w-full sm:w-64"
@@ -174,7 +176,8 @@ export default function SeccionHistorialPagos({
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Concepto</th>
+                <th>Paquete</th>
+                <th>Jugador</th>
                 <th>Monto</th>
                 <th>Activo</th>
                 <th>Estado</th>
@@ -185,14 +188,14 @@ export default function SeccionHistorialPagos({
             <tbody>
               {cargandoPagos && pagos.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                  <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
                     <i className="fa-solid fa-spinner fa-spin mr-2"></i>
                     Cargando pagos desde el backend...
                   </td>
                 </tr>
               ) : pagosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-xs text-[var(--text-muted)]">
+                  <td colSpan={8} className="py-8 text-center text-xs text-[var(--text-muted)]">
                     {pagos.length === 0
                       ? "Todavía no recibiste pagos. Crea uno desde la sección API o con tu API key."
                       : "No se encontraron pagos con los filtros seleccionados."}
@@ -210,6 +213,9 @@ export default function SeccionHistorialPagos({
                         {conceptoPago(pago)}
                       </span>
                     </td>
+                    <td className="text-xs font-mono">
+                      {pago.playerName ?? <span className="text-[var(--text-muted)]">—</span>}
+                    </td>
                     <td className="text-xs font-bold text-[var(--text-primary)]">{pago.amount}</td>
                     <td className="text-xs">
                       <span className="inline-flex items-center gap-1">
@@ -220,7 +226,12 @@ export default function SeccionHistorialPagos({
                       </span>
                     </td>
                     <td>
-                      <BadgeEstado estado={pago.status} />
+                      <BadgeEstado estado={pago.status} motivo={pago.failureReason} />
+                      {pago.failureReason && (
+                        <span className="block mt-1 max-w-[220px] text-[10px] leading-snug text-rose-500">
+                          {pago.failureReason}
+                        </span>
+                      )}
                     </td>
                     <td className="text-xs font-mono">
                       {urlTransaccion(pago) ? (

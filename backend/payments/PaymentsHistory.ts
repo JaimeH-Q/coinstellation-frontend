@@ -31,10 +31,16 @@ export interface Payment {
 	description: string | null;
 	reference: string | null;
 	packageId: string | null;
+	/** Nombre del paquete al momento de la compra. */
+	packageName: string | null;
+	/** Jugador que compró (reemplaza %p% en los comandos). */
+	playerName: string | null;
 	/** Hash de la transacción Stellar, disponible cuando el pago se envió. */
 	transactionId: string | null;
 	sourceAccount: string | null;
 	confirmedAt: string | null;
+	/** Motivo por el que el pago falló (p. ej. el intent no coincidía con el paquete). */
+	failureReason: string | null;
 	createdAt: string;
 	updatedAt: string;
 }

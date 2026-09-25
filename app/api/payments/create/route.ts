@@ -1,24 +1,27 @@
 import { createCosmosPayment } from "@/backend/payments/CosmosPayments";
 import { recordCreatedPayment } from "@/backend/payments/PaymentsRepository";
 import { resolveMerchantUserId, webstoreCorsHeaders } from "@/backend/auth/merchant";
+import { findPackageWithCommands } from "@/backend/packages/PackagesRepository";
+import { isValidPlayerName } from "@/backend/packages/commands";
+import { isValidStellarPublicKey } from "@/backend/stellar/address";
 
 export const runtime = "nodejs";
 
 const CORS_METHODS = "POST";
 
 interface CreatePaymentBody {
+  packageId: string;
+  playerName: string;
   destination: string;
-  amount: string;
-  currency: string;
   description?: string;
   callback?: string;
   reference?: string;
-  packageId?: string;
 }
 
 /**
- * Crea un intent SEP-7 en Cosmos Pay y lo registra como pago pendiente del comerciante.
- * Autenticación: header X-Store-Key (API key del usuario) o sesión del dashboard.
+ * Crea un intent SEP-7 en Cosmos Pay para comprar un paquete y lo registra como pago pendiente.
+ * El monto y el activo salen del precio del paquete (no del body), así la tienda no puede
+ * cobrar otro importe. Autenticación: header X-Store-Key (API key del usuario) o sesión.
  */
 export async function POST(request: Request) {
   const headers = webstoreCorsHeaders(CORS_METHODS);
@@ -36,15 +39,44 @@ export async function POST(request: Request) {
 
   if (!isCreatePaymentBody(body)) {
     return Response.json(
-      { error: "creator wallet, amount and currency are required with valid types." },
+      { error: "packageId, playerName and destination (creator wallet) are required with valid types." },
       { status: 422, headers },
     );
+  }
+
+  const playerName = body.playerName.trim();
+  const destination = body.destination.trim();
+
+  if (!isValidStellarPublicKey(destination)) {
+    return Response.json(
+      { error: "destination must be a valid Stellar public key (G…, 56 characters, valid checksum)." },
+      { status: 422, headers },
+    );
+  }
+
+  if (!isValidPlayerName(playerName)) {
+    return Response.json(
+      { error: "playerName may only contain letters, numbers, '_' and '.' (max 32 characters)." },
+      { status: 422, headers },
+    );
+  }
+
+  const pkg = await findPackageWithCommands(userId, body.packageId.trim());
+
+  if (!pkg) {
+    return Response.json({ error: "Package not found." }, { status: 404, headers });
   }
 
   let payment: Awaited<ReturnType<typeof createCosmosPayment>>;
 
   try {
-    payment = await createCosmosPayment(body);
+    payment = await createCosmosPayment({
+      destination,
+      amount: pkg.price,
+      currency: pkg.currency,
+      description: body.description?.trim() || pkg.name,
+      callback: body.callback,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Cosmos Pay is unavailable.";
     const status = message.includes("COSMOS_PAY") ? 503 : 502;
@@ -55,10 +87,11 @@ export async function POST(request: Request) {
   const record = await recordCreatedPayment({
     userId,
     intent: payment,
-    currency: body.currency,
-    description: body.description,
+    currency: pkg.currency,
+    package: { id: pkg.id, name: pkg.name, commands: pkg.commands.map((command) => command.command) },
+    playerName,
+    description: body.description?.trim() || pkg.name,
     reference: body.reference,
-    packageId: body.packageId,
   });
 
   return Response.json({ payment, record }, { status: 201, headers });
@@ -84,17 +117,14 @@ function isCreatePaymentBody(value: unknown): value is CreatePaymentBody {
   const body = value as Record<string, unknown>;
 
   return (
+    typeof body.packageId === "string" &&
+    body.packageId.trim().length > 0 &&
+    typeof body.playerName === "string" &&
     typeof body.destination === "string" &&
     body.destination.trim().length > 0 &&
-    typeof body.amount === "string" &&
-    /^\d+(\.\d+)?$/.test(body.amount) &&
-    Number(body.amount) > 0 &&
-    typeof body.currency === "string" &&
-    body.currency.trim().length > 0 &&
     isOptionalString(body.description) &&
     isOptionalString(body.callback) &&
-    isOptionalString(body.reference) &&
-    isOptionalString(body.packageId)
+    isOptionalString(body.reference)
   );
 }
 
