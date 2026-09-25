@@ -11,11 +11,17 @@ model User {
   name         String
   email        String   @unique
   passwordHash String
+  /// Wallet pública de Stellar (G…) donde el usuario recibe los pagos.
+  walletAddress String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   apiKey       ApiKey?
   sessions     Session[]
   payments     Payment[]
+  packages     Package[]
+  categories   PackageCategory[]
+  gameServer   GameServer?
+  deliveries   CommandDelivery[]
 }
 
 model ApiKey {
@@ -47,6 +53,8 @@ model Payment {
   status         String    @default("pending")
   amount         String
   currency       String
+  /// Emisor del activo (null para XLM nativo). Se compara con el intent antes de dar el pago por completado.
+  assetIssuer    String?
   network        String
   /// Wallet Stellar que recibe el pago.
   destination    String
@@ -56,15 +64,105 @@ model Payment {
   /// Referencia libre de la tienda (p. ej. número de orden).
   reference      String?
   packageId      String?
+  /// Nombre del paquete al momento de la compra (se conserva aunque el paquete se borre).
+  packageName    String?
+  /// Usuario del jugador que compró; reemplaza %p% en los comandos.
+  playerName     String?
   /// Hash de la transacción Stellar una vez pagada.
   txHash         String?   @unique
   /// Wallet que pagó.
   sourceAccount  String?
   confirmedAt    DateTime?
+  /// Motivo por el que el pago se marcó como fallido (p. ej. el intent no coincide con el paquete).
+  failureReason  String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package        Package?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  deliveries     CommandDelivery[]
 
   @@index([userId, createdAt])
   @@index([status])
+  @@index([packageId])
+}
+
+/// Categoría para agrupar los paquetes de la tienda de un usuario.
+model PackageCategory {
+  id          String    @id @default(uuid())
+  userId      String
+  name        String
+  description String?
+  imageUrl    String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packages    Package[]
+
+  @@index([userId])
+}
+
+/// Producto que vende un usuario. Al completarse un pago se ejecutan sus comandos.
+model Package {
+  id          String           @id @default(uuid())
+  userId      String
+  categoryId  String?
+  name        String
+  description String
+  /// URL http(s) o imagen subida como data URL.
+  imageUrl    String?
+  /// Precio en formato decimal (máx. 7 decimales, como exige Stellar).
+  price       String
+  /// Activo con el que se cobra: XLM o USDC.
+  currency    String           @default("XLM")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    PackageCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  commands    PackageCommand[]
+  payments    Payment[]
+
+  @@index([userId])
+  @@index([categoryId])
+}
+
+/// Comando de consola que se ejecuta en el servidor. Admite %p% (jugador) y %am% (monto).
+model PackageCommand {
+  id        String  @id @default(uuid())
+  packageId String
+  position  Int
+  command   String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, position])
+}
+
+/// Servidor de juego del usuario; el plugin se autentica con su clave para recibir comandos.
+model GameServer {
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  name       String
+  keyHash    String    @unique
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/// Comando ya resuelto (placeholders reemplazados) que espera ser entregado al plugin.
+model CommandDelivery {
+  id          String    @id @default(uuid())
+  userId      String
+  paymentId   String
+  position    Int
+  command     String
+  playerName  String
+  /// awaiting_payment | pending | delivered | cancelled
+  status      String    @default("awaiting_payment")
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment     Payment   @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, position])
+  @@index([userId, status])
 }

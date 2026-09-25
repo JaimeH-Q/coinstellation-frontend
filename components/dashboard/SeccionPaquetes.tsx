@@ -1,85 +1,36 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import {
+  PACKAGE_CURRENCIES,
+  type PackageCategoryDTO,
+  type PackageDTO,
+} from "@/backend/packages/PackageTypes";
 
-export interface Paquete {
+const IMAGEN_PAQUETE_DEFECTO =
+  "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80";
+const IMAGEN_CATEGORIA_DEFECTO =
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
+const ID_SIN_CATEGORIA = "__sin-categoria__";
+
+/** Grupo del catálogo: una categoría real o el grupo virtual "Sin categoría". */
+interface GrupoCatalogo {
   id: string;
   nombre: string;
   descripcion: string;
   imagen: string;
-  categoria: string;
-  precio: number;
-  creadoEn: string;
+  esVirtual: boolean;
+  paquetes: PackageDTO[];
 }
 
-export interface Categoria {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  imagen: string;
-  creadoEn: string;
+async function leerError(respuesta: Response, porDefecto: string) {
+  try {
+    const data: { error?: string } = await respuesta.json();
+    return data.error ?? porDefecto;
+  } catch {
+    return porDefecto;
+  }
 }
-
-const CATEGORIAS_PREDETERMINADAS: Categoria[] = [
-  {
-    id: "cat-1",
-    nombre: "Rangos y Membresías",
-    descripcion: "Beneficios VIP, pases de temporada y membresías exclusivas.",
-    imagen: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-    creadoEn: "18/09/2026",
-  },
-  {
-    id: "cat-2",
-    nombre: "Modelos y Texturas",
-    descripcion: "Lotes de modelos 3D, skins, shaders y assets para videojuegos.",
-    imagen: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
-    creadoEn: "18/09/2026",
-  },
-  {
-    id: "cat-3",
-    nombre: "Claves de Videojuegos",
-    descripcion: "Licencias digitales y claves de activación para títulos oficiales.",
-    imagen: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80",
-    creadoEn: "19/09/2026",
-  },
-  {
-    id: "cat-4",
-    nombre: "Monedas y Créditos",
-    descripcion: "Tokens y divisas para gastar dentro de servidores o plataformas.",
-    imagen: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=600&auto=format&fit=crop&q=80",
-    creadoEn: "19/09/2026",
-  },
-];
-
-const PAQUETES_PREDETERMINADOS: Paquete[] = [
-  {
-    id: "paq-1",
-    nombre: "Kit VIP Titanium",
-    descripcion: "Acceso exclusivo a servidores dedicados, 5,000 monedas y multiplicador de recursos x2.",
-    imagen: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-    categoria: "Rangos y Membresías",
-    precio: 29.99,
-    creadoEn: "18/09/2026",
-  },
-  {
-    id: "paq-2",
-    nombre: "Pase Élite Gladiador",
-    descripcion: "Cosméticos de temporada, montura alada y título brillante en el chat.",
-    imagen: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=600&auto=format&fit=crop&q=80",
-    categoria: "Rangos y Membresías",
-    precio: 14.99,
-    creadoEn: "18/09/2026",
-  },
-  {
-    id: "paq-3",
-    nombre: "Colección Armas Cyberpunk 4K",
-    descripcion: "Lote de 12 modelos texturizados de armas listas para Unreal Engine y Unity con LODs.",
-    imagen: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80",
-    categoria: "Modelos y Texturas",
-    precio: 49.5,
-    creadoEn: "19/09/2026",
-  },
-];
 
 export default function SeccionPaquetes() {
   // Vista activa: 'catalogo' (primero se ve cada categoría con sus paquetes), 'crear-paquete' o 'crear-categoria'
@@ -92,16 +43,21 @@ export default function SeccionPaquetes() {
   // Control del menú desplegable de 3 puntitos de cada categoría
   const [menuCatAbierto, setMenuCatAbierto] = useState<string | null>(null);
 
-  // Estados de datos
-  const [paquetes, setPaquetes] = useState<Paquete[]>(PAQUETES_PREDETERMINADOS);
-  const [categorias, setCategorias] = useState<Categoria[]>(CATEGORIAS_PREDETERMINADAS);
+  // Estados de datos (vienen de /api/packages)
+  const [paquetes, setPaquetes] = useState<PackageDTO[]>([]);
+  const [categorias, setCategorias] = useState<PackageCategoryDTO[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
   // Campos del formulario de Paquete
   const [nombrePaquete, setNombrePaquete] = useState("");
   const [descPaquete, setDescPaquete] = useState("");
   const [imagenPaquete, setImagenPaquete] = useState("");
-  const [catSeleccionada, setCatSeleccionada] = useState("Rangos y Membresías");
+  const [catSeleccionada, setCatSeleccionada] = useState("");
   const [precioPaquete, setPrecioPaquete] = useState("");
+  const [monedaPaquete, setMonedaPaquete] = useState<string>(PACKAGE_CURRENCIES[0]);
+  const [comandosPaquete, setComandosPaquete] = useState("");
+  const refComandos = useRef<HTMLTextAreaElement>(null);
 
   // Campos del formulario de Categoría
   const [nombreCategoria, setNombreCategoria] = useState("");
@@ -111,34 +67,32 @@ export default function SeccionPaquetes() {
   // Alertas
   const [mensajeExito, setMensajeExito] = useState("");
   const [errorForm, setErrorForm] = useState("");
+  const [errorCarga, setErrorCarga] = useState("");
 
-  // Cargar paquetes y categorías de localStorage
+  // Cargar paquetes y categorías del usuario
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const guardadosPaquetes = localStorage.getItem("coinstellation_paquetes_lista");
-      if (guardadosPaquetes) {
-        try {
-          const parsedP = JSON.parse(guardadosPaquetes);
-          if (Array.isArray(parsedP) && parsedP.length > 0) {
-            setPaquetes(parsedP);
-          }
-        } catch {
-          // ignore
-        }
-      }
+    let vigente = true;
 
-      const guardadasCategorias = localStorage.getItem("coinstellation_categorias_lista");
-      if (guardadasCategorias) {
-        try {
-          const parsedC = JSON.parse(guardadasCategorias);
-          if (Array.isArray(parsedC) && parsedC.length > 0) {
-            setCategorias(parsedC);
-          }
-        } catch {
-          // ignore
-        }
-      }
-    }
+    fetch("/api/packages", { cache: "no-store" })
+      .then(async (respuesta) => {
+        if (!respuesta.ok) throw new Error(await leerError(respuesta, "No se pudieron cargar los paquetes."));
+        return respuesta.json() as Promise<{ packages: PackageDTO[]; categories: PackageCategoryDTO[] }>;
+      })
+      .then((data) => {
+        if (!vigente) return;
+        setPaquetes(data.packages);
+        setCategorias(data.categories);
+      })
+      .catch((error: unknown) => {
+        if (vigente) setErrorCarga(error instanceof Error ? error.message : "No se pudieron cargar los paquetes.");
+      })
+      .finally(() => {
+        if (vigente) setCargando(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
   }, []);
 
   // Cerrar menú al hacer clic fuera
@@ -154,21 +108,36 @@ export default function SeccionPaquetes() {
     };
   }, []);
 
-  // Actualizar categorías en estado y localStorage
-  const actualizarCategorias = (nuevas: Categoria[]) => {
-    setCategorias(nuevas);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("coinstellation_categorias_lista", JSON.stringify(nuevas));
-    }
+  const mostrarExito = (mensaje: string) => {
+    setMensajeExito(mensaje);
+    setTimeout(() => {
+      setMensajeExito("");
+    }, 3500);
   };
 
-  // Actualizar paquetes en estado y localStorage
-  const actualizarPaquetes = (nuevos: Paquete[]) => {
-    setPaquetes(nuevos);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("coinstellation_paquetes_lista", JSON.stringify(nuevos));
-    }
-  };
+  // Categorías reales + grupo "Sin categoría" para paquetes sin categoría asignada
+  const idsCategorias = new Set(categorias.map((c) => c.id));
+  const paquetesSinCategoria = paquetes.filter((p) => !p.categoryId || !idsCategorias.has(p.categoryId));
+  const grupos: GrupoCatalogo[] = [
+    ...categorias.map((cat) => ({
+      id: cat.id,
+      nombre: cat.name,
+      descripcion: cat.description ?? "",
+      imagen: cat.imageUrl ?? IMAGEN_CATEGORIA_DEFECTO,
+      esVirtual: false,
+      paquetes: paquetes.filter((p) => p.categoryId === cat.id),
+    })),
+    ...(paquetesSinCategoria.length > 0
+      ? [{
+          id: ID_SIN_CATEGORIA,
+          nombre: "Sin categoría",
+          descripcion: "Paquetes que todavía no pertenecen a ninguna categoría.",
+          imagen: IMAGEN_CATEGORIA_DEFECTO,
+          esVirtual: true,
+          paquetes: paquetesSinCategoria,
+        }]
+      : []),
+  ];
 
   // Subida de imagen para paquete
   const manejarSubidaImagenPaquete = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,12 +167,31 @@ export default function SeccionPaquetes() {
     }
   };
 
+  // Inserta un placeholder (%p% o %am%) en la posición del cursor del editor de comandos
+  const insertarPlaceholder = (placeholder: string) => {
+    const editor = refComandos.current;
+    if (!editor) {
+      setComandosPaquete((actual) => actual + placeholder);
+      return;
+    }
+    const inicio = editor.selectionStart;
+    const fin = editor.selectionEnd;
+    const nuevo = comandosPaquete.slice(0, inicio) + placeholder + comandosPaquete.slice(fin);
+    setComandosPaquete(nuevo);
+    requestAnimationFrame(() => {
+      editor.focus();
+      editor.setSelectionRange(inicio + placeholder.length, inicio + placeholder.length);
+    });
+  };
+
   // Abrir creación de paquete con categoría opcionalmente preseleccionada
   const abrirCrearPaquete = (categoriaPrevia?: string) => {
-    if (categoriaPrevia) {
+    if (categoriaPrevia && categoriaPrevia !== ID_SIN_CATEGORIA) {
       setCatSeleccionada(categoriaPrevia);
-    } else if (categorias.length > 0) {
-      setCatSeleccionada(categorias[0].nombre);
+    } else if (!categoriaPrevia && categorias.length > 0 && !catSeleccionada) {
+      setCatSeleccionada(categorias[0].id);
+    } else if (categoriaPrevia === ID_SIN_CATEGORIA) {
+      setCatSeleccionada("");
     }
     setErrorForm("");
     setVistaActual("crear-paquete");
@@ -218,9 +206,14 @@ export default function SeccionPaquetes() {
   };
 
   // Guardar nuevo Paquete
-  const manejarCrearPaquete = (e: React.FormEvent) => {
+  const manejarCrearPaquete = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorForm("");
+
+    const comandos = comandosPaquete
+      .split("\n")
+      .map((linea) => linea.trim())
+      .filter(Boolean);
 
     if (!nombrePaquete.trim()) {
       setErrorForm("El nombre del paquete es obligatorio.");
@@ -230,37 +223,54 @@ export default function SeccionPaquetes() {
       setErrorForm("La descripción del paquete es obligatoria.");
       return;
     }
-    const precioNum = parseFloat(precioPaquete);
-    if (isNaN(precioNum) || precioNum < 0) {
-      setErrorForm("Ingresa un precio válido mayor o igual a 0.");
+    if (!/^\d+(\.\d{1,7})?$/.test(precioPaquete.trim()) || Number(precioPaquete) <= 0) {
+      setErrorForm("Ingresa un precio mayor a 0 (hasta 7 decimales).");
+      return;
+    }
+    if (comandos.length === 0) {
+      setErrorForm("Agrega al menos un comando para ejecutar cuando se complete el pago.");
       return;
     }
 
-    const nuevoPaquete: Paquete = {
-      id: "paq-" + Date.now(),
-      nombre: nombrePaquete.trim(),
-      descripcion: descPaquete.trim(),
-      imagen: imagenPaquete || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80",
-      categoria: catSeleccionada.trim() || (categorias[0]?.nombre ?? "General"),
-      precio: precioNum,
-      creadoEn: new Date().toLocaleDateString("es-ES"),
-    };
+    setGuardando(true);
+    try {
+      const respuesta = await fetch("/api/packages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nombrePaquete.trim(),
+          description: descPaquete.trim(),
+          imageUrl: imagenPaquete || null,
+          price: precioPaquete.trim(),
+          currency: monedaPaquete,
+          categoryId: catSeleccionada || null,
+          commands: comandos,
+        }),
+      });
 
-    actualizarPaquetes([nuevoPaquete, ...paquetes]);
-    setNombrePaquete("");
-    setDescPaquete("");
-    setImagenPaquete("");
-    setPrecioPaquete("");
-    setVistaActual("catalogo");
-    setMensajeExito(`¡Paquete "${nuevoPaquete.nombre}" creado exitosamente!`);
+      if (!respuesta.ok) {
+        setErrorForm(await leerError(respuesta, "No se pudo crear el paquete."));
+        return;
+      }
 
-    setTimeout(() => {
-      setMensajeExito("");
-    }, 3500);
+      const { package: nuevoPaquete }: { package: PackageDTO } = await respuesta.json();
+      setPaquetes((actuales) => [nuevoPaquete, ...actuales]);
+      setNombrePaquete("");
+      setDescPaquete("");
+      setImagenPaquete("");
+      setPrecioPaquete("");
+      setComandosPaquete("");
+      setVistaActual("catalogo");
+      mostrarExito(`¡Paquete "${nuevoPaquete.name}" creado exitosamente!`);
+    } catch {
+      setErrorForm("Error de conexión al crear el paquete.");
+    } finally {
+      setGuardando(false);
+    }
   };
 
   // Guardar nueva Categoría
-  const manejarCrearCategoria = (e: React.FormEvent) => {
+  const manejarCrearCategoria = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorForm("");
 
@@ -273,35 +283,60 @@ export default function SeccionPaquetes() {
       return;
     }
 
-    const nuevaCategoria: Categoria = {
-      id: "cat-" + Date.now(),
-      nombre: nombreCategoria.trim(),
-      descripcion: descCategoria.trim(),
-      imagen: imagenCategoria || "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-      creadoEn: new Date().toLocaleDateString("es-ES"),
-    };
+    setGuardando(true);
+    try {
+      const respuesta = await fetch("/api/packages/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: nombreCategoria.trim(),
+          description: descCategoria.trim(),
+          imageUrl: imagenCategoria || null,
+        }),
+      });
 
-    actualizarCategorias([...categorias, nuevaCategoria]);
-    setCatSeleccionada(nuevaCategoria.nombre);
-    setNombreCategoria("");
-    setDescCategoria("");
-    setImagenCategoria("");
-    setVistaActual("catalogo");
-    setMensajeExito(`¡Categoría "${nuevaCategoria.nombre}" creada exitosamente!`);
+      if (!respuesta.ok) {
+        setErrorForm(await leerError(respuesta, "No se pudo crear la categoría."));
+        return;
+      }
 
-    setTimeout(() => {
-      setMensajeExito("");
-    }, 3500);
+      const { category: nuevaCategoria }: { category: PackageCategoryDTO } = await respuesta.json();
+      setCategorias((actuales) => [...actuales, nuevaCategoria]);
+      setCatSeleccionada(nuevaCategoria.id);
+      setNombreCategoria("");
+      setDescCategoria("");
+      setImagenCategoria("");
+      setVistaActual("catalogo");
+      mostrarExito(`¡Categoría "${nuevaCategoria.name}" creada exitosamente!`);
+    } catch {
+      setErrorForm("Error de conexión al crear la categoría.");
+    } finally {
+      setGuardando(false);
+    }
   };
 
-  const eliminarPaquete = (id: string) => {
-    const filtrados = paquetes.filter((p) => p.id !== id);
-    actualizarPaquetes(filtrados);
+  const eliminarPaquete = async (paquete: PackageDTO) => {
+    if (!window.confirm(`¿Eliminar el paquete "${paquete.name}"? Los pagos anteriores se conservan.`)) return;
+
+    const respuesta = await fetch(`/api/packages/${encodeURIComponent(paquete.id)}`, { method: "DELETE" });
+    if (respuesta.ok) {
+      setPaquetes((actuales) => actuales.filter((p) => p.id !== paquete.id));
+    } else {
+      setErrorCarga(await leerError(respuesta, "No se pudo eliminar el paquete."));
+    }
   };
 
-  const eliminarCategoria = (id: string, nombreCat: string) => {
-    const filtradas = categorias.filter((c) => c.id !== id);
-    actualizarCategorias(filtradas);
+  const eliminarCategoria = async (id: string, nombreCat: string) => {
+    if (!window.confirm(`¿Eliminar la categoría "${nombreCat}"? Sus paquetes quedarán sin categoría.`)) return;
+
+    const respuesta = await fetch(`/api/packages/categories/${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (respuesta.ok) {
+      setCategorias((actuales) => actuales.filter((c) => c.id !== id));
+      setPaquetes((actuales) => actuales.map((p) => (p.categoryId === id ? { ...p, categoryId: null } : p)));
+      if (catSeleccionada === id) setCatSeleccionada("");
+    } else {
+      setErrorCarga(await leerError(respuesta, "No se pudo eliminar la categoría."));
+    }
   };
 
   return (
@@ -398,6 +433,13 @@ export default function SeccionPaquetes() {
         </div>
       )}
 
+      {errorCarga && (
+        <div className="mb-6 p-3 rounded-[4px] bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-semibold flex items-center gap-2">
+          <i className="fa-solid fa-circle-exclamation text-sm"></i>
+          <span>{errorCarga}</span>
+        </div>
+      )}
+
       {/* ======================================================== */}
       {/* VISTA 1: CATÁLOGO DE CATEGORÍAS CON SUS PAQUETES         */}
       {/* "primero se vea cada categoria ya creada con su o sus     */}
@@ -405,7 +447,12 @@ export default function SeccionPaquetes() {
       {/* ======================================================== */}
       {vistaActual === "catalogo" && (
         <div className="flex flex-col gap-8">
-          {categorias.length === 0 ? (
+          {cargando ? (
+            <div className="p-12 text-center text-xs text-[var(--text-muted)]">
+              <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+              Cargando paquetes...
+            </div>
+          ) : grupos.length === 0 ? (
             <div className="p-12 text-center rounded-[6px] border border-dashed border-[var(--border-color)] bg-[var(--bg-card)]">
               <i className="fa-solid fa-layer-group text-3xl text-[var(--text-muted)] mb-3"></i>
               <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1">
@@ -423,9 +470,8 @@ export default function SeccionPaquetes() {
               </button>
             </div>
           ) : (
-            categorias.map((cat) => {
-              // Filtrar paquetes correspondientes a esta categoría
-              const paquetesDeCategoria = paquetes.filter((p) => p.categoria === cat.nombre);
+            grupos.map((cat) => {
+              const paquetesDeCategoria = cat.paquetes;
 
               return (
                 <div
@@ -478,24 +524,26 @@ export default function SeccionPaquetes() {
                             type="button"
                             onClick={() => {
                               setMenuCatAbierto(null);
-                              abrirCrearPaquete(cat.nombre);
+                              abrirCrearPaquete(cat.id);
                             }}
                             className="w-full flex items-center gap-2 px-3 py-2 rounded-[3px] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] text-left cursor-pointer transition-colors"
                           >
                             <i className="fa-solid fa-plus text-[10px]"></i>
                             <span>Añadir paquete</span>
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMenuCatAbierto(null);
-                              eliminarCategoria(cat.id, cat.nombre);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-2 rounded-[3px] text-xs font-semibold text-red-500 hover:bg-red-500/10 text-left cursor-pointer transition-colors mt-0.5"
-                          >
-                            <i className="fa-solid fa-trash-can text-[10px]"></i>
-                            <span>Eliminar categoría</span>
-                          </button>
+                          {!cat.esVirtual && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMenuCatAbierto(null);
+                                eliminarCategoria(cat.id, cat.nombre);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-[3px] text-xs font-semibold text-red-500 hover:bg-red-500/10 text-left cursor-pointer transition-colors mt-0.5"
+                            >
+                              <i className="fa-solid fa-trash-can text-[10px]"></i>
+                              <span>Eliminar categoría</span>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -510,7 +558,7 @@ export default function SeccionPaquetes() {
                         </p>
                         <button
                           type="button"
-                          onClick={() => abrirCrearPaquete(cat.nombre)}
+                          onClick={() => abrirCrearPaquete(cat.id)}
                           className="text-xs font-bold text-[var(--accent-gray)] hover:underline cursor-pointer"
                         >
                           + Crear el primer paquete para esta categoría
@@ -526,12 +574,12 @@ export default function SeccionPaquetes() {
                             <div>
                               {/* Fila superior: Título y Botón eliminar (X roja) separados para evitar superposición */}
                               <div className="flex items-start justify-between gap-2 mb-2.5">
-                                <h4 className="text-xs font-bold text-[var(--text-primary)] truncate" title={paq.nombre}>
-                                  {paq.nombre}
+                                <h4 className="text-xs font-bold text-[var(--text-primary)] truncate" title={paq.name}>
+                                  {paq.name}
                                 </h4>
                                 <button
                                   type="button"
-                                  onClick={() => eliminarPaquete(paq.id)}
+                                  onClick={() => eliminarPaquete(paq)}
                                   className="text-red-500 hover:text-red-700 hover:bg-red-500/10 p-1 rounded-[4px] transition-colors cursor-pointer shrink-0"
                                   title="Eliminar paquete"
                                 >
@@ -543,22 +591,29 @@ export default function SeccionPaquetes() {
                               <div className="w-40 max-w-full h-28 mx-auto rounded-[4px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border-subtle)] mb-3 flex items-center justify-center">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={paq.imagen}
-                                  alt={paq.nombre}
+                                  src={paq.imageUrl ?? IMAGEN_PAQUETE_DEFECTO}
+                                  alt={paq.name}
                                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 />
                               </div>
 
                               {/* Descripción */}
                               <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed mb-3">
-                                {paq.descripcion}
+                                {paq.description}
                               </p>
                             </div>
 
-                            {/* Pie de tarjeta: Sin fecha de creación, en su lugar está el precio */}
-                            <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between">
+                            {/* Pie de tarjeta: precio y cantidad de comandos */}
+                            <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
                               <span className="text-xs font-extrabold text-[var(--text-primary)]">
-                                ${paq.precio.toFixed(2)} USD
+                                {paq.price} {paq.currency}
+                              </span>
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-[3px] bg-[var(--bg-card)] text-[var(--text-secondary)] border border-[var(--border-color)] inline-flex items-center gap-1"
+                                title={paq.commands?.join("\n")}
+                              >
+                                <i className="fa-solid fa-terminal text-[9px]"></i>
+                                {paq.commands?.length ?? 0} {paq.commands?.length === 1 ? "comando" : "comandos"}
                               </span>
                             </div>
                           </div>
@@ -701,44 +756,103 @@ export default function SeccionPaquetes() {
                 onChange={(e) => setCatSeleccionada(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gray)] transition-colors cursor-pointer"
               >
+                <option value="">Sin categoría</option>
                 {categorias.map((cat) => (
-                  <option key={cat.id} value={cat.nombre}>
-                    {cat.nombre}
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* 5. Precio (ABAJO de categoría según requerimiento explícito) */}
+            {/* 5. Precio y activo (ABAJO de categoría según requerimiento explícito) */}
             <div className="flex flex-col gap-1 text-left">
               <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
-                Precio (USD)
+                Precio
               </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs text-[var(--text-muted)] font-bold">
-                  $
-                </span>
+              <div className="flex gap-2">
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   placeholder="19.99"
                   value={precioPaquete}
                   onChange={(e) => setPrecioPaquete(e.target.value)}
                   required
-                  className="w-full pl-7 pr-3 py-2 rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
+                  className="flex-1 w-full px-3 py-2 rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--accent-gray)] transition-colors"
                 />
+                <select
+                  value={monedaPaquete}
+                  onChange={(e) => setMonedaPaquete(e.target.value)}
+                  aria-label="Activo con el que se cobra"
+                  className="w-28 px-3 py-2 rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-xs font-bold focus:outline-none focus:border-[var(--accent-gray)] transition-colors cursor-pointer"
+                >
+                  {PACKAGE_CURRENCIES.map((moneda) => (
+                    <option key={moneda} value={moneda}>
+                      {moneda}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <p className="text-[11px] text-[var(--text-muted)]">
+                Es el monto exacto que se cobrará en Stellar al comprar el paquete.
+              </p>
+            </div>
+
+            {/* 6. Comandos a ejecutar en el servidor al completarse el pago */}
+            <div className="flex flex-col gap-1 text-left">
+              <div className="flex items-center justify-between gap-2">
+                <label
+                  htmlFor="comandos-paquete"
+                  className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
+                >
+                  Comandos
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => insertarPlaceholder("%p%")}
+                    className="px-2 py-0.5 rounded-[3px] border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-hover)] text-[10px] font-mono font-bold text-[var(--text-primary)] cursor-pointer"
+                    title="Nombre del jugador que compró"
+                  >
+                    + %p%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertarPlaceholder("%am%")}
+                    className="px-2 py-0.5 rounded-[3px] border border-[var(--border-color)] bg-[var(--bg-main)] hover:bg-[var(--bg-hover)] text-[10px] font-mono font-bold text-[var(--text-primary)] cursor-pointer"
+                    title="Monto que pagó el jugador"
+                  >
+                    + %am%
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="comandos-paquete"
+                ref={refComandos}
+                rows={5}
+                spellCheck={false}
+                placeholder={"lp user %p% parent add vip\ngive %p% diamond 64\nbroadcast %p% apoyó al servidor con %am% XLM"}
+                value={comandosPaquete}
+                onChange={(e) => setComandosPaquete(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-[4px] border border-[var(--border-color)] bg-[var(--bg-main)] text-[var(--text-primary)] text-xs font-mono focus:outline-none focus:border-[var(--accent-gray)] transition-colors resize-y"
+              />
+              <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+                Un comando por línea, sin la <code>/</code> inicial. Se ejecutan en la consola de tu servidor, en
+                orden, cuando se confirma el pago. <code className="font-bold">%p%</code> se reemplaza por el
+                nombre del jugador y <code className="font-bold">%am%</code> por el monto pagado.
+              </p>
             </div>
 
             {/* Botón de Enviar */}
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2"
+                disabled={guardando}
+                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="fa-solid fa-plus text-xs"></i>
-                <span>Crear Paquete</span>
+                <span>{guardando ? "Creando..." : "Crear Paquete"}</span>
               </button>
               <button
                 type="button"
@@ -865,10 +979,11 @@ export default function SeccionPaquetes() {
             <div className="mt-4 flex items-center gap-3">
               <button
                 type="submit"
-                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2"
+                disabled={guardando}
+                className="flex-1 py-2.5 px-4 rounded-[4px] bg-[#095a86] hover:bg-[#07476b] text-white font-bold text-xs shadow cursor-pointer transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <i className="fa-solid fa-check text-xs"></i>
-                <span>Crear Categoría</span>
+                <span>{guardando ? "Creando..." : "Crear Categoría"}</span>
               </button>
               <button
                 type="button"
