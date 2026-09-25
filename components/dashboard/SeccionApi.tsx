@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface Transaccion {
   id: string;
@@ -16,31 +16,77 @@ interface CosmosPaymentResponse {
   network: string;
 }
 
-const transaccionesIniciales: Transaccion[] = [
-  { id: "1", text: "USDC → Wallet", amount: "+$24.99", status: "Approved" },
-  { id: "2", text: "API Call /checkout", amount: "2.1s", status: "Synced" },
-  { id: "3", text: "KYC Validation", amount: "Passed", status: "Verified" },
-];
+const API_BASE_URL = "https://TU_DOMINIO_COINSTELLATION";
+const API_ENDPOINT = `${API_BASE_URL}/api/payments/create`;
+const SNIPPET_API = `const response = await fetch("${API_ENDPOINT}", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-Store-Key": "PEGA_AQUI_TU_API_KEY"
+  },
+  body: JSON.stringify({
+    destination: "G...WALLET_PUBLICA",
+    amount: "24.99",
+    currency: "XLM",
+    description: "Orden #1001"
+  })
+});
 
-const SNIPPET_SDK = `import { Coinstellation } from '@coinstellation/sdk';
-
-const pay = new Coinstellation({ apiKey: 'cs_live_99' });
-
-await pay.checkout.process({
-  amount: 24.99,
-  currency: 'USD'
-});`;
+const data = await response.json();`;
 
 export default function SeccionApi() {
   const [tabActiva, setTabActiva] = useState<"dev" | "store">("dev");
-  const [transacciones, setTransacciones] = useState<Transaccion[]>(transaccionesIniciales);
+  const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const [copiadoKey, setCopiadoKey] = useState(false);
   const [copiadoCodigo, setCopiadoCodigo] = useState(false);
   const [copiadoUrlPago, setCopiadoUrlPago] = useState(false);
+  const [copiadoUrlBase, setCopiadoUrlBase] = useState(false);
   const [mensajeToast, setMensajeToast] = useState<string | null>(null);
   const [simulandoPago, setSimulandoPago] = useState(false);
   const [pagoCosmos, setPagoCosmos] = useState<CosmosPaymentResponse | null>(null);
   const [walletCreador, setWalletCreador] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKeyExists, setApiKeyExists] = useState(false);
+  const [cargandoApiKey, setCargandoApiKey] = useState(true);
+  const [generandoApiKey, setGenerandoApiKey] = useState(false);
+  const [errorApiKey, setErrorApiKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vigente = true;
+
+    void Promise.resolve()
+      .then(async () => {
+        const guardado = localStorage.getItem("usuario_sesion");
+        const sesion = guardado ? (JSON.parse(guardado) as { id?: unknown }) : null;
+        if (typeof sesion?.id !== "string") {
+          throw new Error("Inicia sesión para administrar tu API key.");
+        }
+
+        const response = await fetch(`/api/users/${encodeURIComponent(sesion.id)}/api-key`, {
+          cache: "no-store",
+        });
+        const data: { hasApiKey?: boolean; error?: string } = await response.json();
+        if (!response.ok) throw new Error(data.error ?? "No se pudo consultar la API key.");
+
+        if (vigente) {
+          setUserId(sesion.id);
+          setApiKeyExists(data.hasApiKey === true);
+        }
+      })
+      .catch((error: unknown) => {
+        if (vigente) {
+          setErrorApiKey(error instanceof Error ? error.message : "No se pudo consultar la API key.");
+        }
+      })
+      .finally(() => {
+        if (vigente) setCargandoApiKey(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, []);
 
   const mostrarToast = (msg: string) => {
     setMensajeToast(msg);
@@ -58,6 +104,32 @@ export default function SeccionApi() {
     };
     setTransacciones((prev) => [nuevaTx, ...prev].slice(0, 7));
     mostrarToast(`Evento registrado: ${texto}`);
+  };
+
+  const generarApiKey = async () => {
+    if (!userId) return;
+
+    setGenerandoApiKey(true);
+    setErrorApiKey(null);
+
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(userId)}/api-key`, {
+        method: "POST",
+      });
+      const data: { apiKey?: string; error?: string } = await response.json();
+      if (!response.ok || !data.apiKey) {
+        throw new Error(data.error ?? "No se pudo generar la API key.");
+      }
+
+      setApiKey(data.apiKey);
+      setApiKeyExists(true);
+      setCopiadoKey(false);
+      mostrarToast("API key generada. Copiala ahora; no se volverá a mostrar.");
+    } catch (error) {
+      setErrorApiKey(error instanceof Error ? error.message : "No se pudo generar la API key.");
+    } finally {
+      setGenerandoApiKey(false);
+    }
   };
 
   const simularPagoCosmos = async () => {
@@ -96,7 +168,10 @@ export default function SeccionApi() {
     }
   };
 
-  const copiarAlPortapapeles = async (texto: string, tipo: "key" | "code" | "paymentUrl") => {
+  const copiarAlPortapapeles = async (
+    texto: string,
+    tipo: "key" | "code" | "paymentUrl" | "baseUrl",
+  ) => {
     try {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(texto);
@@ -107,16 +182,21 @@ export default function SeccionApi() {
       } else if (tipo === "code") {
         setCopiadoCodigo(true);
         setTimeout(() => setCopiadoCodigo(false), 2000);
-      } else {
+      } else if (tipo === "paymentUrl") {
         setCopiadoUrlPago(true);
         setTimeout(() => setCopiadoUrlPago(false), 2000);
+      } else {
+        setCopiadoUrlBase(true);
+        setTimeout(() => setCopiadoUrlBase(false), 2000);
       }
       mostrarToast(
         tipo === "key"
           ? "Clave API copiada al portapapeles"
           : tipo === "code"
             ? "Código SDK copiado"
-            : "URL de pago copiada al portapapeles",
+            : tipo === "paymentUrl"
+              ? "URL de pago copiada al portapapeles"
+              : "URL base copiada al portapapeles",
       );
     } catch {
       mostrarToast("No se pudo copiar al portapapeles");
@@ -217,44 +297,23 @@ export default function SeccionApi() {
       )}
 
       {/* Barra de credenciales rápidas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Entorno y SLA */}
         <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
-              Entorno
+              Integración
             </span>
             <div className="flex items-center gap-2 mt-0.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <strong className="text-xs font-bold text-[var(--text-primary)]">
-                Producción (Live)
+                REST / JSON
               </strong>
             </div>
           </div>
           <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-            99.99% SLA
+            Sin SDK
           </span>
-        </div>
-
-        {/* API Key */}
-        <div className="p-3.5 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)] flex items-center justify-between">
-          <div className="overflow-hidden mr-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] block">
-              API Key Activa
-            </span>
-            <code className="text-xs font-mono font-bold text-[var(--text-primary)] truncate block mt-0.5">
-              cs_live_99
-            </code>
-          </div>
-          <button
-            type="button"
-            onClick={() => copiarAlPortapapeles("cs_live_99", "key")}
-            className="px-2.5 py-1 text-[11px] font-bold rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all cursor-pointer flex-shrink-0"
-            title="Copiar API Key"
-          >
-            <i className={`fa-solid ${copiadoKey ? "fa-check text-emerald-500" : "fa-copy"} mr-1`}></i>
-            {copiadoKey ? "Copiada" : "Copiar"}
-          </button>
         </div>
 
         {/* Base URL */}
@@ -264,17 +323,17 @@ export default function SeccionApi() {
               Endpoint Base
             </span>
             <code className="text-xs font-mono font-bold text-[var(--text-primary)] truncate block mt-0.5">
-              https://api.coinstellation.com/v1
+              {API_BASE_URL}
             </code>
           </div>
           <button
             type="button"
-            onClick={() => copiarAlPortapapeles("https://api.coinstellation.com/v1", "key")}
+            onClick={() => copiarAlPortapapeles(API_BASE_URL, "baseUrl")}
             className="px-2.5 py-1 text-[11px] font-bold rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all cursor-pointer flex-shrink-0"
             title="Copiar URL"
           >
-            <i className="fa-solid fa-copy mr-1"></i>
-            Copiar
+            <i className={`fa-solid ${copiadoUrlBase ? "fa-check text-emerald-500" : "fa-copy"} mr-1`}></i>
+            {copiadoUrlBase ? "Copiada" : "Copiar"}
           </button>
         </div>
       </div>
@@ -313,6 +372,7 @@ export default function SeccionApi() {
             </button>
           </div>
 
+          <div className="api-demo-stage">
           {/* Panel Desarrollador */}
           <div
             className={`landing-panel ${tabActiva === "dev" ? "active" : ""}`}
@@ -324,42 +384,69 @@ export default function SeccionApi() {
                 <div className="visual-header">
                   <div className="flex items-center gap-2">
                     <span className="status-dot"></span>
-                    <span>API ready</span>
+                    <span>API disponible</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => agregarTransaccion("API Call /checkout", "1.9s", "Synced")}
-                    className="text-[10px] font-bold text-[#095a86] dark:text-sky-300 hover:underline cursor-pointer lowercase"
-                  >
-                    <i className="fa-solid fa-play mr-1"></i>test call
-                  </button>
                 </div>
                 <div className="visual-grid">
-                  <div className="visual-item">
-                    <label>Key</label>
-                    <strong>cs_live_99</strong>
+                  <div className="visual-item wide">
+                    <label>API Key</label>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <code className="min-w-0 break-all text-xs font-mono font-bold text-white">
+                        {apiKey ?? (cargandoApiKey ? "Consultando..." : apiKeyExists ? "••••••••••••••••" : "Aún no generada")}
+                      </code>
+                      {apiKey ? (
+                        <button
+                          type="button"
+                          onClick={() => copiarAlPortapapeles(apiKey, "key")}
+                          className="shrink-0 rounded border border-white/15 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-white/10"
+                        >
+                          <i className={`fa-solid ${copiadoKey ? "fa-check" : "fa-copy"} mr-1`}></i>
+                          {copiadoKey ? "Copiada" : "Copiar"}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={generarApiKey}
+                          disabled={!userId || cargandoApiKey || generandoApiKey}
+                          className="shrink-0 rounded bg-[#095a86] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0b6fa5] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {generandoApiKey ? "Generando..." : apiKeyExists ? "Generar nueva" : "Generar API key"}
+                        </button>
+                      )}
+                    </div>
+                    {apiKeyExists && !apiKey && (
+                      <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                        Por seguridad, la clave existente no se puede recuperar. Genera una nueva para copiarla.
+                      </p>
+                    )}
+                    {apiKey && (
+                      <p className="mt-2 text-[10px] text-amber-200">
+                        Guarda esta clave ahora; solo se muestra al generarla.
+                      </p>
+                    )}
+                    {errorApiKey && <p className="mt-2 text-[10px] text-rose-300">{errorApiKey}</p>}
                   </div>
                   <div className="visual-item">
                     <label>Route</label>
-                    <strong>/checkout</strong>
+                    <strong>POST /api/payments/create</strong>
                   </div>
-                  <div className="visual-item wide">
-                    <label>Result</label>
-                    <strong>Approved • $24.99 USD</strong>
+                  <div className="visual-item">
+                    <label>Response</label>
+                    <strong>201 Created</strong>
                   </div>
                 </div>
               </div>
 
-              {/* Columna de Código SDK */}
+              {/* Columna de llamada HTTP */}
               <div className="code-column">
                 <div className="mini-code-box">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-muted)]">
-                      Node / TypeScript SDK
+                      HTTP / JSON
                     </span>
                     <button
                       type="button"
-                      onClick={() => copiarAlPortapapeles(SNIPPET_SDK, "code")}
+                      onClick={() => copiarAlPortapapeles(SNIPPET_API, "code")}
                       className="text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer flex items-center gap-1"
                     >
                       <i className={`fa-solid ${copiadoCodigo ? "fa-check text-emerald-500" : "fa-copy"}`}></i>
@@ -367,7 +454,7 @@ export default function SeccionApi() {
                     </button>
                   </div>
                   <pre>
-                    <code>{SNIPPET_SDK}</code>
+                    <code>{SNIPPET_API}</code>
                   </pre>
                 </div>
               </div>
@@ -390,23 +477,26 @@ export default function SeccionApi() {
               type="button"
               className="btn-primary buy-button"
               id="buyButtonDashboard"
-              onClick={() => agregarTransaccion("Checkout / Cosmic Pass V2", "+$24.99", "Approved")}
+              onClick={simularPagoCosmos}
+              disabled={simulandoPago}
             >
-              Buy Now with Coinstellation
+              {simulandoPago ? "Creando pago..." : "Crear pago de prueba"}
             </button>
+          </div>
           </div>
 
           {/* Feed de Actividad en Red en Vivo */}
           <div className="live-feed">
             <div className="live-title">
-              <span>Live Network Activity</span>
+              <span>Solicitudes ejecutadas</span>
               <span className="transaction-count" id="txCountDashboard">
-                {transacciones.length} transaction
-                {transacciones.length === 1 ? "" : "s"}
+                {transacciones.length} solicitud{transacciones.length === 1 ? "" : "es"}
               </span>
             </div>
             <ul className="tx-list" id="txListDashboard">
-              {transacciones.map((item) => (
+              {transacciones.length === 0 ? (
+                <li className="tx-item">Todavía no hay solicitudes realizadas.</li>
+              ) : transacciones.map((item) => (
                 <li key={item.id} className="tx-item">
                   <span className="flex items-center gap-2">
                     <i className="fa-solid fa-arrow-right-arrow-left text-[10px] opacity-60"></i>
@@ -438,14 +528,14 @@ export default function SeccionApi() {
                 POST
               </span>
               <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                /api/payments
+                /api/payments/create
               </code>
             </div>
             <p className="text-xs text-[var(--text-secondary)] mb-3">
               Crea una orden de cobro en Stellar y devuelve la URI o transacción XDR para firma del usuario.
             </p>
             <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
-              Authorization: Bearer cs_live_99
+              X-Store-Key: PEGA_AQUI_TU_API_KEY
             </div>
           </div>
 

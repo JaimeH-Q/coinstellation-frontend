@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 // Estructura de cada enlace de la barra lateral
 interface ElementoNavegacion {
@@ -17,7 +18,6 @@ interface SeccionMenu {
 
 interface BarraLateralProps {
   seccionActiva: string;
-  alSeleccionarSeccion: (id: string) => void;
 }
 
 // Definimos los enlaces del menú organizados por sección
@@ -40,7 +40,7 @@ const SECCIONES_MENU: SeccionMenu[] = [
   },
 ];
 
-export default function BarraLateral({ seccionActiva, alSeleccionarSeccion }: BarraLateralProps) {
+export default function BarraLateral({ seccionActiva }: BarraLateralProps) {
   return (
     <aside className="sidebar">
       {/* Contenedor de Secciones en la Barra Lateral */}
@@ -51,17 +51,17 @@ export default function BarraLateral({ seccionActiva, alSeleccionarSeccion }: Ba
             <nav className="sidebar-nav">
               {seccion.elementos.map((item) => {
                 const estaActivo = seccionActiva === item.id;
+                const href = item.id === "dashboard" ? "/dashboard" : `/dashboard/${item.id}`;
                 return (
-                  <button
+                  <Link
                     key={item.id}
-                    type="button"
-                    onClick={() => alSeleccionarSeccion(item.id)}
+                    href={href}
                     className={`nav-link ${estaActivo ? "active" : ""}`}
                     aria-current={estaActivo ? "page" : undefined}
                   >
                     <i className={item.icono}></i>
                     <span>{item.etiqueta}</span>
-                  </button>
+                  </Link>
                 );
               })}
             </nav>

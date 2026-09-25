@@ -657,6 +657,12 @@ nav a {
   background: rgba(255, 255, 255, 0.025);
 }
 
+.api-demo-stage {
+  height: 360px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 .switch-btn {
   flex: 1;
   padding: 8px 12px;
@@ -957,6 +963,10 @@ nav a {
 }
 
 @media (max-width: 760px) {
+  .api-demo-stage {
+    height: 540px;
+  }
+
   .landing-page header {
     flex-wrap: wrap;
     gap: 1rem;

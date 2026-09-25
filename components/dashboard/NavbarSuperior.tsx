@@ -6,14 +6,12 @@ import { useRouter } from "next/navigation";
 
 interface NavbarSuperiorProps {
   seccionActiva: string;
-  alSeleccionarSeccion: (id: string) => void;
   esModoOscuro: boolean;
   alAlternarModoOscuro: () => void;
 }
 
 export default function NavbarSuperior({
   seccionActiva,
-  alSeleccionarSeccion,
   esModoOscuro,
   alAlternarModoOscuro,
 }: NavbarSuperiorProps) {
@@ -146,9 +144,8 @@ export default function NavbarSuperior({
           </div>
 
           {/* Botón de Proyectos (sin icono, bordes cuadrados) */}
-          <button
-            type="button"
-            onClick={() => alSeleccionarSeccion("proyectos")}
+          <Link
+            href="/dashboard/proyectos"
             className={`px-3.5 py-1.5 h-9 rounded-[4px] border text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center ${
               seccionActiva === "proyectos"
                 ? "bg-[#095a86] text-white border-[#095a86]"
@@ -156,12 +153,11 @@ export default function NavbarSuperior({
             }`}
           >
             Proyectos
-          </button>
+          </Link>
 
           {/* Botón de Billetera (sin icono, bordes cuadrados) */}
-          <button
-            type="button"
-            onClick={() => alSeleccionarSeccion("billetera")}
+          <Link
+            href="/dashboard/billetera"
             className={`px-3.5 py-1.5 h-9 rounded-[4px] border text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center ${
               seccionActiva === "billetera"
                 ? "bg-[#095a86] text-white border-[#095a86]"
@@ -169,7 +165,7 @@ export default function NavbarSuperior({
             }`}
           >
             Billetera
-          </button>
+          </Link>
 
           {/* Nombre del Usuario con flecha para Ventana Emergente */}
           <div className="relative" ref={refMenuUsuario}>
@@ -205,29 +201,23 @@ export default function NavbarSuperior({
 
                 {/* Opciones del menú emergente */}
                 <div className="flex flex-col gap-1 text-left">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuUsuarioAbierto(false);
-                      alSeleccionarSeccion("proyectos");
-                    }}
+                  <Link
+                    href="/dashboard/proyectos"
+                    onClick={() => setMenuUsuarioAbierto(false)}
                     className="w-full px-3 py-2 rounded-[4px] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
                     <i className="fa-solid fa-folder-tree text-xs text-[var(--text-secondary)]"></i>
                     <span>Mis Proyectos</span>
-                  </button>
+                  </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuUsuarioAbierto(false);
-                      alSeleccionarSeccion("billetera");
-                    }}
+                  <Link
+                    href="/dashboard/billetera"
+                    onClick={() => setMenuUsuarioAbierto(false)}
                     className="w-full px-3 py-2 rounded-[4px] text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-hover)] flex items-center gap-2.5 transition-colors cursor-pointer"
                   >
                     <i className="fa-solid fa-wallet text-xs text-[var(--text-secondary)]"></i>
                     <span>Mi Billetera</span>
-                  </button>
+                  </Link>
 
                   {/* Selector de Modo Oscuro / Claro mantenido en la ventana emergente */}
                   <button
