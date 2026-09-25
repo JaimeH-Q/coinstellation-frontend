@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useDashboardLayout } from "@/app/dashboard/DashboardShell";
 
 interface Transaccion {
   id: string;
@@ -35,6 +36,8 @@ const SNIPPET_API = `const response = await fetch("${API_ENDPOINT}", {
 const data = await response.json();`;
 
 export default function SeccionApi() {
+  const { usuario } = useDashboardLayout();
+  const userId = usuario.id;
   const [tabActiva, setTabActiva] = useState<"dev" | "store">("dev");
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
   const [copiadoKey, setCopiadoKey] = useState(false);
@@ -45,7 +48,6 @@ export default function SeccionApi() {
   const [simulandoPago, setSimulandoPago] = useState(false);
   const [pagoCosmos, setPagoCosmos] = useState<CosmosPaymentResponse | null>(null);
   const [walletCreador, setWalletCreador] = useState("");
-  const [userId, setUserId] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyExists, setApiKeyExists] = useState(false);
   const [cargandoApiKey, setCargandoApiKey] = useState(true);
@@ -57,20 +59,13 @@ export default function SeccionApi() {
 
     void Promise.resolve()
       .then(async () => {
-        const guardado = localStorage.getItem("usuario_sesion");
-        const sesion = guardado ? (JSON.parse(guardado) as { id?: unknown }) : null;
-        if (typeof sesion?.id !== "string") {
-          throw new Error("Inicia sesión para administrar tu API key.");
-        }
-
-        const response = await fetch(`/api/users/${encodeURIComponent(sesion.id)}/api-key`, {
+        const response = await fetch(`/api/users/${encodeURIComponent(userId)}/api-key`, {
           cache: "no-store",
         });
         const data: { hasApiKey?: boolean; error?: string } = await response.json();
         if (!response.ok) throw new Error(data.error ?? "No se pudo consultar la API key.");
 
         if (vigente) {
-          setUserId(sesion.id);
           setApiKeyExists(data.hasApiKey === true);
         }
       })
@@ -86,7 +81,7 @@ export default function SeccionApi() {
     return () => {
       vigente = false;
     };
-  }, []);
+  }, [userId]);
 
   const mostrarToast = (msg: string) => {
     setMensajeToast(msg);
@@ -107,8 +102,6 @@ export default function SeccionApi() {
   };
 
   const generarApiKey = async () => {
-    if (!userId) return;
-
     setGenerandoApiKey(true);
     setErrorApiKey(null);
 
@@ -407,7 +400,7 @@ export default function SeccionApi() {
                         <button
                           type="button"
                           onClick={generarApiKey}
-                          disabled={!userId || cargandoApiKey || generandoApiKey}
+                          disabled={cargandoApiKey || generandoApiKey}
                           className="shrink-0 rounded bg-[#095a86] px-2.5 py-1 text-[11px] font-bold text-white hover:bg-[#0b6fa5] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {generandoApiKey ? "Generando..." : apiKeyExists ? "Generar nueva" : "Generar API key"}

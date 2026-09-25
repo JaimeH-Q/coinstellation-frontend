@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import prisma from "@/backend/database/prisma";
+import { getCurrentUser } from "@/backend/auth/session";
 
 export const runtime = "nodejs";
 
@@ -7,8 +8,26 @@ interface ApiKeyRouteContext {
   params: Promise<{ id: string }>;
 }
 
+/** Solo el propio usuario (con sesión válida) puede ver o regenerar su API key. */
+async function authorize(id: string): Promise<Response | null> {
+  const sessionUser = await getCurrentUser();
+
+  if (!sessionUser) {
+    return Response.json({ error: "Inicia sesión para administrar tu API key." }, { status: 401 });
+  }
+
+  if (sessionUser.id !== id) {
+    return Response.json({ error: "No tienes permiso sobre este usuario." }, { status: 403 });
+  }
+
+  return null;
+}
+
 export async function GET(_request: Request, { params }: ApiKeyRouteContext) {
   const { id } = await params;
+  const denied = await authorize(id);
+  if (denied) return denied;
+
   const user = await prisma.user.findUnique({
     where: { id },
     select: {
@@ -29,6 +48,9 @@ export async function GET(_request: Request, { params }: ApiKeyRouteContext) {
 
 export async function POST(_request: Request, { params }: ApiKeyRouteContext) {
   const { id } = await params;
+  const denied = await authorize(id);
+  if (denied) return denied;
+
   const user = await prisma.user.findUnique({
     where: { id },
     select: { id: true },
