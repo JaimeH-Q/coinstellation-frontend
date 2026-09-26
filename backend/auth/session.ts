@@ -23,10 +23,26 @@ function hashToken(token: string): string {
 }
 
 /**
+ * true si la solicitud llegó por HTTPS, directo o a través de un proxy (X-Forwarded-Proto).
+ * Decide si la cookie lleva `Secure`: el navegador descarta una cookie `Secure` recibida por
+ * HTTP, así que marcarla según NODE_ENV rompía el login al servir la app por http://IP:puerto.
+ */
+export function isHttpsRequest(request: Request): boolean {
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+
+  if (forwardedProto) {
+    return forwardedProto === "https";
+  }
+
+  return new URL(request.url).protocol === "https:";
+}
+
+/**
  * Crea una sesión en la base de datos y escribe la cookie httpOnly.
  * Solo se puede llamar desde un Route Handler o una Server Function.
+ * `secure` debe ser true cuando la solicitud llegó por HTTPS (ver isHttpsRequest).
  */
-export async function createSession(userId: string, remember: boolean): Promise<void> {
+export async function createSession(userId: string, remember: boolean, secure: boolean): Promise<void> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + (remember ? REMEMBER_DURATION_MS : DEFAULT_DURATION_MS));
 
@@ -37,7 +53,7 @@ export async function createSession(userId: string, remember: boolean): Promise<
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure,
     sameSite: "lax",
     path: "/",
     // Sin "Recuérdame" es una cookie de sesión del navegador.
