@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useDashboardLayout } from "@/app/dashboard/DashboardShell";
 import type { PackageDTO } from "@/backend/packages/PackageTypes";
 import type { WalletDTO } from "@/backend/wallet/WalletTypes";
+import { copiarTexto } from "./copiarTexto";
 
 interface Transaccion {
   id: string;
@@ -17,31 +18,108 @@ interface CosmosPaymentResponse {
   uri: string | null;
   qr: string | null;
   network: string;
+  destination: string;
+  amount: string | null;
+  /** "native" para XLM. */
+  asset: string;
+  memo: string;
 }
 
-const API_BASE_URL = "https://TU_DOMINIO_COINSTELLATION";
-const API_ENDPOINT = `${API_BASE_URL}/api/payments/create`;
-const SNIPPET_API = `const response = await fetch("${API_ENDPOINT}", {
+// Si no se configura PUBLIC_API_URL, se usa la URL desde la que se abre el dashboard.
+const suscribirseSinCambios = () => () => {};
+const leerOrigen = () => window.location.origin;
+const origenEnServidor = () => "";
+
+interface DatosSnippet {
+  baseUrl: string;
+  apiKey: string | null;
+  packageId: string | null;
+  destination: string;
+}
+
+/** Ejemplo de integración con los datos reales del usuario (paquete, wallet y URL del servidor). */
+function construirSnippet({ baseUrl, apiKey, packageId, destination }: DatosSnippet) {
+  return `// Llamar desde el BACKEND de tu tienda: la API key es secreta.
+const response = await fetch("${baseUrl || "https://TU_SERVIDOR"}/api/payments/create", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "X-Store-Key": "PEGA_AQUI_TU_API_KEY"
+    "X-Store-Key": "${apiKey ?? "TU_API_KEY"}"
   },
   body: JSON.stringify({
-    packageId: "ID_DEL_PAQUETE",     // el monto y el activo salen del paquete
-    playerName: "Steve",             // reemplaza %p% en los comandos
-    destination: "G...WALLET_PUBLICA",
-    reference: "Orden #1001"
+    packageId: "${packageId ?? "ID_DEL_PAQUETE"}", // monto y activo salen del paquete
+    playerName: "Steve",       // jugador: reemplaza %p% en los comandos
+    destination: "${destination || "TU_WALLET_G..."}",
+    reference: "orden-1001"    // opcional: tu ID de orden
   })
 });
 
-const data = await response.json();`;
+const { payment } = await response.json();
+// payment.uri → enlace web+stellar:pay para abrir la wallet del comprador
+// payment.qr  → imagen del QR (data URL) para <img src>
+// payment.id  → ID del pago para consultar su estado en GET /api/payments`;
+}
 
-export default function SeccionApi() {
+interface EndpointDoc {
+  metodo: "GET" | "POST";
+  ruta: string;
+  descripcion: string;
+  detalles: string[];
+  opcional?: boolean;
+}
+
+/** Referencia de la API pública para tiendas (coincide con app/api/payments y app/api/packages). */
+const REFERENCIA_ENDPOINTS: EndpointDoc[] = [
+  {
+    metodo: "POST",
+    ruta: "/api/payments/create",
+    descripcion:
+      "Crea el cobro de un paquete. El monto y el activo salen del paquete. Devuelve payment.uri (SEP-7) y payment.qr para que el comprador pague desde su wallet.",
+    detalles: [
+      "Body: { packageId, playerName, destination, reference?, description? }",
+      "playerName: letras, números, _ y . (máx. 32)",
+      "destination: tu wallet pública de Stellar (G…)",
+      "201 · 401 key inválida · 404 paquete · 422 datos · 502/503 Cosmos",
+    ],
+  },
+  {
+    metodo: "GET",
+    ruta: "/api/payments",
+    descripcion:
+      "Pagos de tu cuenta, del más nuevo al más viejo. Un pago pasa a completed solo, hasta ~1 min después de que el comprador paga.",
+    detalles: [
+      "Query: ?count=50 (1–200) & status=completed",
+      "status: pending · processing · completed · failed · cancelled · expired",
+      "Buscar tu pago por cosmosIntentId = payment.id",
+    ],
+  },
+  {
+    metodo: "GET",
+    ruta: "/api/packages",
+    descripcion: "Catálogo de tus paquetes y categorías para mostrarlos en la tienda (sin los comandos).",
+    detalles: ["Respuesta: { packages: [{ id, name, description, imageUrl, price, currency, categoryId }], categories }"],
+  },
+  {
+    metodo: "POST",
+    ruta: "/api/payments/{payment.id}/validate",
+    descripcion:
+      "Confirma el pago al instante si tu tienda obtiene el hash de la transacción (p. ej. con el WebClient de Cosmos). Si no, se confirma solo.",
+    detalles: ["Body: { txHash }", "Respuesta: { payment: { valid, status, reason }, record }"],
+    opcional: true,
+  },
+];
+
+interface SeccionApiProps {
+  /** URL pública del servidor (PUBLIC_API_URL en el .env); se muestra en la documentación. */
+  urlPublica?: string | null;
+}
+
+export default function SeccionApi({ urlPublica = null }: SeccionApiProps) {
   const { usuario } = useDashboardLayout();
   const userId = usuario.id;
   const [tabActiva, setTabActiva] = useState<"dev" | "store">("dev");
   const [transacciones, setTransacciones] = useState<Transaccion[]>([]);
+  const contadorTransacciones = useRef(0);
   const [copiadoKey, setCopiadoKey] = useState(false);
   const [copiadoCodigo, setCopiadoCodigo] = useState(false);
   const [copiadoUrlPago, setCopiadoUrlPago] = useState(false);
@@ -54,6 +132,8 @@ export default function SeccionApi() {
   const [paqueteId, setPaqueteId] = useState("");
   const [jugador, setJugador] = useState("");
   const paqueteSeleccionado = paquetes.find((p) => p.id === paqueteId) ?? null;
+  const origenActual = useSyncExternalStore(suscribirseSinCambios, leerOrigen, origenEnServidor);
+  const baseUrl = urlPublica || origenActual;
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [apiKeyExists, setApiKeyExists] = useState(false);
   const [cargandoApiKey, setCargandoApiKey] = useState(true);
@@ -123,9 +203,10 @@ export default function SeccionApi() {
     }, 3000);
   };
 
-  const agregarTransaccion = (texto: string, monto = "+$24.99", estado = "Approved") => {
+  const agregarTransaccion = (texto: string, monto: string, estado: string) => {
     const nuevaTx: Transaccion = {
-      id: Date.now().toString(),
+      // crypto.randomUUID no existe por HTTP (contexto no seguro), así que se usa un contador.
+      id: String(++contadorTransacciones.current),
       text: texto,
       amount: monto,
       status: estado,
@@ -206,13 +287,21 @@ export default function SeccionApi() {
     }
   };
 
+  const snippetApi = construirSnippet({
+    baseUrl,
+    apiKey,
+    packageId: paqueteSeleccionado?.id ?? null,
+    destination: walletCreador.trim(),
+  });
+
   const copiarAlPortapapeles = async (
     texto: string,
     tipo: "key" | "code" | "paymentUrl" | "baseUrl",
   ) => {
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(texto);
+      if (!(await copiarTexto(texto))) {
+        mostrarToast("No se pudo copiar: selecciona el texto y cópialo con Ctrl+C");
+        return;
       }
       if (tipo === "key") {
         setCopiadoKey(true);
@@ -352,6 +441,23 @@ export default function SeccionApi() {
               />
             </div>
           )}
+          <div className="mt-3 rounded-[8px] border border-amber-500/30 bg-amber-500/5 p-3">
+            <p className="text-[11px] font-extrabold text-[var(--text-primary)] mb-1">¿Pagas a mano desde tu wallet?</p>
+            <p className="text-[10px] text-[var(--text-secondary)] mb-2">
+              Usa exactamente estos datos. <strong>El memo es obligatorio</strong>: sin él, el pago no se puede asociar
+              a esta compra y queda pendiente.
+            </p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[10px] font-mono">
+              <dt className="text-[var(--text-muted)]">Destino</dt>
+              <dd className="break-all text-[var(--text-primary)]">{pagoCosmos.destination}</dd>
+              <dt className="text-[var(--text-muted)]">Monto</dt>
+              <dd className="text-[var(--text-primary)]">
+                {pagoCosmos.amount} {pagoCosmos.asset === "native" ? "XLM" : pagoCosmos.asset}
+              </dd>
+              <dt className="text-[var(--text-muted)]">Memo (ID)</dt>
+              <dd className="text-[var(--text-primary)] font-bold">{pagoCosmos.memo}</dd>
+            </dl>
+          </div>
         </div>
       )}
 
@@ -382,12 +488,12 @@ export default function SeccionApi() {
               Endpoint Base
             </span>
             <code className="text-xs font-mono font-bold text-[var(--text-primary)] truncate block mt-0.5">
-              {API_BASE_URL}
+              {baseUrl || "…"}
             </code>
           </div>
           <button
             type="button"
-            onClick={() => copiarAlPortapapeles(API_BASE_URL, "baseUrl")}
+            onClick={() => copiarAlPortapapeles(baseUrl, "baseUrl")}
             className="px-2.5 py-1 text-[11px] font-bold rounded border border-[var(--border-color)] hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all cursor-pointer flex-shrink-0"
             title="Copiar URL"
           >
@@ -406,7 +512,7 @@ export default function SeccionApi() {
             Integra Coinstellation en minutos
           </h2>
           <p className="text-xs sm:text-sm text-[var(--text-muted)]">
-            Procesa pagos Stellar desde tu aplicación con latencia subsegundo.
+            Cobra tus paquetes en XLM o USDC sobre Stellar. Al confirmarse el pago, los comandos llegan a tu servidor.
           </p>
         </div>
 
@@ -493,6 +599,20 @@ export default function SeccionApi() {
                     <label>Response</label>
                     <strong>201 Created</strong>
                   </div>
+                  <div className="visual-item wide">
+                    <label>Datos de este ejemplo</label>
+                    <span className="block text-[11px] text-white/80 leading-relaxed">
+                      Paquete: <strong>{paqueteSeleccionado ? `${paqueteSeleccionado.name} (${paqueteSeleccionado.price} ${paqueteSeleccionado.currency})` : "crea uno en Paquetes"}</strong>
+                      <br />
+                      Wallet: <strong>{walletCreador.trim() ? "la de tu Billetera" : "configúrala en Billetera"}</strong>
+                      {!apiKey && (
+                        <>
+                          <br />
+                          API key: genera una arriba para verla en el código
+                        </>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -505,7 +625,7 @@ export default function SeccionApi() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => copiarAlPortapapeles(SNIPPET_API, "code")}
+                      onClick={() => copiarAlPortapapeles(snippetApi, "code")}
                       className="text-[11px] font-bold text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer flex items-center gap-1"
                     >
                       <i className={`fa-solid ${copiadoCodigo ? "fa-check text-emerald-500" : "fa-copy"}`}></i>
@@ -513,7 +633,7 @@ export default function SeccionApi() {
                     </button>
                   </div>
                   <pre>
-                    <code>{SNIPPET_API}</code>
+                    <code>{snippetApi}</code>
                   </pre>
                 </div>
               </div>
@@ -575,66 +695,45 @@ export default function SeccionApi() {
       </div>
 
       {/* =========================================================================
-          Guía de Referencia de Endpoints Principales
+          Referencia de endpoints (todos con header X-Store-Key: TU_API_KEY)
           ========================================================================= */}
       <div>
-        <h3 className="text-sm font-extrabold text-[var(--text-primary)] mb-3">
-          Endpoints recomendados
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Endpoint 1 */}
-          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-                POST
-              </span>
-              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                /api/payments/create
-              </code>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1 mb-3">
+          <h3 className="text-sm font-extrabold text-[var(--text-primary)]">Endpoints</h3>
+          <p className="text-[11px] text-[var(--text-muted)]">
+            Base: <code className="font-mono">{baseUrl || "…"}</code> · Autenticación:{" "}
+            <code className="font-mono">X-Store-Key: TU_API_KEY</code> (solo desde tu backend)
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {REFERENCIA_ENDPOINTS.map((endpoint) => (
+            <div
+              key={`${endpoint.metodo} ${endpoint.ruta}`}
+              className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${
+                    endpoint.metodo === "GET"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                      : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+                  }`}
+                >
+                  {endpoint.metodo}
+                </span>
+                <code className="text-xs font-mono font-bold text-[var(--text-primary)]">{endpoint.ruta}</code>
+                {endpoint.opcional && (
+                  <span className="text-[10px] font-bold text-[var(--text-muted)]">opcional</span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mb-3">{endpoint.descripcion}</p>
+              <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)] space-y-0.5">
+                {endpoint.detalles.map((detalle) => (
+                  <div key={detalle}>{detalle}</div>
+                ))}
+              </div>
             </div>
-            <p className="text-xs text-[var(--text-secondary)] mb-3">
-              Crea una orden de cobro en Stellar y devuelve la URI o transacción XDR para firma del usuario.
-            </p>
-            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
-              X-Store-Key: PEGA_AQUI_TU_API_KEY
-            </div>
-          </div>
-
-          {/* Endpoint 2 */}
-          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                GET
-              </span>
-              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                /api/payments
-              </code>
-            </div>
-            <p className="text-xs text-[var(--text-secondary)] mb-3">
-              Recupera el historial de transacciones, estados de liquidación y montos netos confirmados.
-            </p>
-            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
-              X-Store-Key · ?count=50&amp;status=completed
-            </div>
-          </div>
-
-          {/* Endpoint 3 */}
-          <div className="p-4 rounded-[12px] border border-[var(--border-color)] bg-[var(--bg-card)]">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
-                WEBHOOKS
-              </span>
-              <code className="text-xs font-mono font-bold text-[var(--text-primary)]">
-                payment.completed
-              </code>
-            </div>
-            <p className="text-xs text-[var(--text-secondary)] mb-3">
-              Notificación automática a tu servidor cuando una transacción alcanza finalidad en Stellar.
-            </p>
-            <div className="text-[11px] text-[var(--text-muted)] font-mono bg-[var(--bg-main)] p-2 rounded border border-[var(--border-color)]">
-              Header: X-Coinstellation-Signature
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
