@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { isValidStellarPublicKey } from "@/backend/stellar/address";
 import type { WalletDTO } from "@/backend/wallet/WalletTypes";
+import { copiarTexto } from "./copiarTexto";
 
 function urlCuenta(red: string, direccion: string) {
   return `https://stellar.expert/explorer/${red === "public" ? "public" : "testnet"}/account/${direccion}`;
@@ -128,12 +129,11 @@ export default function SeccionBilletera() {
 
   const copiarDireccion = async () => {
     if (!billetera?.walletAddress) return;
-    try {
-      await navigator.clipboard.writeText(billetera.walletAddress);
+    if (await copiarTexto(billetera.walletAddress)) {
       setCopiada(true);
       setTimeout(() => setCopiada(false), 2000);
-    } catch {
-      setError("No se pudo copiar la dirección.");
+    } else {
+      setError("No se pudo copiar la dirección: selecciónala y cópiala con Ctrl+C.");
     }
   };
 

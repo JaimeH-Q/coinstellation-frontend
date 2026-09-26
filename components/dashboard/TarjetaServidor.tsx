@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import type { GameServerDTO } from "@/backend/packages/PackageTypes";
+import { copiarTexto } from "./copiarTexto";
 
 function formatearFechaHora(iso: string) {
   return new Date(iso).toLocaleString("es-ES", {
@@ -85,12 +86,11 @@ export default function TarjetaServidor() {
 
   const copiarClave = async () => {
     if (!clave) return;
-    try {
-      await navigator.clipboard.writeText(clave);
+    if (await copiarTexto(clave)) {
       setCopiada(true);
       setTimeout(() => setCopiada(false), 2000);
-    } catch {
-      setError("No se pudo copiar la clave.");
+    } else {
+      setError("No se pudo copiar la clave: selecciónala y cópiala con Ctrl+C.");
     }
   };
 
