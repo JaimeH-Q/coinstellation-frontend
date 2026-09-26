@@ -47,18 +47,6 @@ export default function Hero() {
           Infraestructura moderna de pagos y entregas automáticas: cobra a tus jugadores, activa sus rangos en segundos y
           mantén el control total de tus ingresos desde un solo lugar.
         </p>
-        <div className="hero-cta">
-          <button
-            type="button"
-            className="btn-primary"
-            id="btnTriggerPayment"
-          >
-            Simular pago
-          </button>
-          <a href="#documentation" className="btn-secondary">
-            Ver documentación
-          </a>
-        </div>
       </div>
 
       <div className="api-intro">
