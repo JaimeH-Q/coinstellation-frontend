@@ -1,5 +1,5 @@
 import { verifyCredentials } from "@/backend/users/UserRegister";
-import { createSession } from "@/backend/auth/session";
+import { createSession, isHttpsRequest } from "@/backend/auth/session";
 
 export const runtime = "nodejs";
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     );
   }
 
-  await createSession(user.id, remember);
+  await createSession(user.id, remember, isHttpsRequest(request));
 
   return Response.json(
     { user: { id: user.id, name: user.name, email: user.email } },
