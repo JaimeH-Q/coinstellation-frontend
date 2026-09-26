@@ -41,5 +41,5 @@ yarn-error.log*
 next-env.d.ts
 
 # # prisma local databases
-# /prisma/*.db
-# /prisma/*.db-*
+/prisma/*.db
+/prisma/*.db-*
