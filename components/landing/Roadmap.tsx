@@ -59,7 +59,8 @@ export default function Roadmap() {
 
   return (
     <section
-      className="coin-roadmap"
+      id="proceso"
+      className="coin-roadmap scroll-mt-20"
       aria-label="Roadmap de configuración de Coinstellation"
     >
       <div className="coin-roadmap-header">

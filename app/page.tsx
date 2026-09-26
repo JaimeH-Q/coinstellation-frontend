@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
@@ -8,11 +7,9 @@ import Costos from "@/components/landing/Costos";
 import Servicios from "@/components/landing/Servicios";
 import Footer from "@/components/landing/Footer";
 import ModalRegistro from "@/components/landing/ModalRegistro";
-
 export default function PaginaInicio() {
   const [esModoClaro, setEsModoClaro] = useState(false);
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
-
   // Sincroniza clases en el body para la landing page y el tema claro/oscuro
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -33,7 +30,6 @@ export default function PaginaInicio() {
       }
     };
   }, []);
-
   const alternarTema = () => {
     setEsModoClaro((prev) => {
       const nuevo = !prev;
@@ -44,7 +40,6 @@ export default function PaginaInicio() {
       return nuevo;
     });
   };
-
   // Si llega con query param ?registro=true (ej. desde el login), abre el modal
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -54,7 +49,6 @@ export default function PaginaInicio() {
       }
     }
   }, []);
-
   return (
     <div className={`landing-page ${esModoClaro ? "light-mode" : ""}`}>
       {/* 1. Barra de Navegación superior */}
@@ -63,22 +57,16 @@ export default function PaginaInicio() {
         onAlternarTema={alternarTema}
         onAbrirRegistro={() => setModalRegistroAbierto(true)}
       />
-
       {/* 2. Sección Principal / Hero y Simulador Interactivo */}
       <Hero />
-
       {/* 3. Roadmap / Pasos de Configuración */}
       <Roadmap />
-
       {/* 4. Costos y Comisiones / Simulador */}
       <Costos />
-
       {/* 5. Carrusel 3D de Servicios */}
       <Servicios />
-
       {/* 6. Pie de Página */}
       <Footer />
-
       {/* 6. Modal de Registro */}
       <ModalRegistro
         estaAbierto={modalRegistroAbierto}
@@ -86,4 +74,4 @@ export default function PaginaInicio() {
       />
     </div>
   );
-}
+} 

@@ -66,7 +66,8 @@ export default function Servicios() {
 
   return (
     <section
-      className="coin-services"
+      id="servicios"
+      className="coin-services scroll-mt-20"
       aria-label="Servicios principales de Coinstellation"
     >
       <h2 className="coin-services-title">

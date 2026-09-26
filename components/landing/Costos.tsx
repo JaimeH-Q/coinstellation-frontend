@@ -12,7 +12,7 @@ export default function Costos() {
   const totalNeto = valorValido - comisionCoinst;
 
   return (
-    <section className="coin-costs" id="pricing" aria-label="Costos y comisiones de Coinstellation">
+    <section className="coin-costs scroll-mt-20" id="costos" aria-label="Costos y comisiones de Coinstellation">
       <div className="coin-costs-header">
         <h2>Costos y Comisiones</h2>
         <p className="coin-costs-copy">

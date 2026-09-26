@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 
 interface NavbarProps {
@@ -15,61 +15,9 @@ export default function Navbar({
   onAbrirRegistro,
 }: NavbarProps) {
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const [dropdownActivo, setDropdownActivo] = useState<string | null>(null);
-  const navRef = useRef<HTMLElement>(null);
-  const cierreDropdownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cerrar dropdown al hacer click fuera o presionar Escape
-  useEffect(() => {
-    const handleClickFuera = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        setDropdownActivo(null);
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setDropdownActivo(null);
-        setMenuAbierto(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickFuera);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("click", handleClickFuera);
-      document.removeEventListener("keydown", handleKeyDown);
-      if (cierreDropdownRef.current) {
-        clearTimeout(cierreDropdownRef.current);
-      }
-    };
-  }, []);
-
-  const cancelarCierreDropdown = () => {
-    if (cierreDropdownRef.current) {
-      clearTimeout(cierreDropdownRef.current);
-      cierreDropdownRef.current = null;
-    }
-  };
-
-  const programarCierreDropdown = () => {
-    cancelarCierreDropdown();
-    cierreDropdownRef.current = setTimeout(() => {
-      setDropdownActivo(null);
-      cierreDropdownRef.current = null;
-    }, 300);
-  };
-
-  const mantenerDropdownAbierto = (id: string) => {
-    cancelarCierreDropdown();
-    setDropdownActivo(id);
-  };
-
-  const alternarDropdown = (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    cancelarCierreDropdown();
-    setDropdownActivo((actual) => (actual === id ? null : id));
+  const cerrarMenu = () => {
+    setMenuAbierto(false);
   };
 
   return (
@@ -94,112 +42,23 @@ export default function Navbar({
 
       <nav
         id="mainNav"
-        ref={navRef}
         className={menuAbierto ? "is-open" : ""}
       >
         <ul>
-          {/* PRODUCTOS */}
-          <li
-            className="products-nav-item dropdown-nav-item"
-            onMouseEnter={() => mantenerDropdownAbierto("productsDropdown")}
-            onMouseLeave={programarCierreDropdown}
-          >
-            <a
-              href="#coin-services"
-              className="dropdown-trigger"
-              data-dropdown="productsDropdown"
-              aria-expanded={dropdownActivo === "productsDropdown"}
-              aria-controls="productsDropdown"
-              onClick={(e) => alternarDropdown("productsDropdown", e)}
-            >
-              Productos
+          <li>
+            <a href="#proceso" onClick={cerrarMenu}>
+              Proceso
             </a>
-            <div
-              className={`dropdown-medium ${
-                dropdownActivo === "productsDropdown" ? "is-open" : ""
-              }`}
-              id="productsDropdown"
-              onMouseEnter={() => mantenerDropdownAbierto("productsDropdown")}
-              onMouseLeave={programarCierreDropdown}
-            ></div>
           </li>
-
-          {/* SOLUCIONES */}
-          <li
-            className="dropdown-nav-item"
-            onMouseEnter={() => mantenerDropdownAbierto("solutionsDropdown")}
-            onMouseLeave={programarCierreDropdown}
-          >
-            <a
-              href="#solutions"
-              className="dropdown-trigger"
-              data-dropdown="solutionsDropdown"
-              aria-expanded={dropdownActivo === "solutionsDropdown"}
-              aria-controls="solutionsDropdown"
-              onClick={(e) => alternarDropdown("solutionsDropdown", e)}
-            >
-              Soluciones
+          <li>
+            <a href="#costos" onClick={cerrarMenu}>
+              Costos
             </a>
-            <div
-              className={`dropdown-medium ${
-                dropdownActivo === "solutionsDropdown" ? "is-open" : ""
-              }`}
-              id="solutionsDropdown"
-              onMouseEnter={() => mantenerDropdownAbierto("solutionsDropdown")}
-              onMouseLeave={programarCierreDropdown}
-            ></div>
           </li>
-
-          {/* DESARROLLADORES */}
-          <li
-            className="dropdown-nav-item"
-            onMouseEnter={() => mantenerDropdownAbierto("developersDropdown")}
-            onMouseLeave={programarCierreDropdown}
-          >
-            <a
-              href="#documentation"
-              className="dropdown-trigger"
-              data-dropdown="developersDropdown"
-              aria-expanded={dropdownActivo === "developersDropdown"}
-              aria-controls="developersDropdown"
-              onClick={(e) => alternarDropdown("developersDropdown", e)}
-            >
-              Desarrolladores
+          <li>
+            <a href="#servicios" onClick={cerrarMenu}>
+              Servicios
             </a>
-            <div
-              className={`dropdown-medium ${
-                dropdownActivo === "developersDropdown" ? "is-open" : ""
-              }`}
-              id="developersDropdown"
-              onMouseEnter={() => mantenerDropdownAbierto("developersDropdown")}
-              onMouseLeave={programarCierreDropdown}
-            ></div>
-          </li>
-
-          {/* PRECIOS */}
-          <li
-            className="dropdown-nav-item"
-            onMouseEnter={() => mantenerDropdownAbierto("pricingDropdown")}
-            onMouseLeave={programarCierreDropdown}
-          >
-            <a
-              href="#pricing"
-              className="dropdown-trigger"
-              data-dropdown="pricingDropdown"
-              aria-expanded={dropdownActivo === "pricingDropdown"}
-              aria-controls="pricingDropdown"
-              onClick={(e) => alternarDropdown("pricingDropdown", e)}
-            >
-              Precios
-            </a>
-            <div
-              className={`dropdown-medium ${
-                dropdownActivo === "pricingDropdown" ? "is-open" : ""
-              }`}
-              id="pricingDropdown"
-              onMouseEnter={() => mantenerDropdownAbierto("pricingDropdown")}
-              onMouseLeave={programarCierreDropdown}
-            ></div>
           </li>
         </ul>
       </nav>

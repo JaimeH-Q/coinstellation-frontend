@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${nunito.variable} h-full antialiased`}>
+    <html lang="es" className={`${nunito.variable} h-full antialiased scroll-smooth`}>
       <head>
         {/* FontAwesome CDN para toda la iconografía minimalista del dashboard */}
         <link
