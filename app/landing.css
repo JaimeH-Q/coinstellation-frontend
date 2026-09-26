@@ -68,20 +68,24 @@ body.light-mode .landing-page,
   order: 3;
 }
 
-.landing-page>.coin-services {
+.landing-page>.coin-costs {
   order: 4;
 }
 
+.landing-page>.coin-services {
+  order: 5;
+}
+
+.landing-page>.coin-roadmap-modal {
+  order: 8;
+}
+
 .landing-page>.site-footer {
-  order: 6;
+  order: 9;
 }
 
 .landing-page>.hero {
   display: contents;
-}
-
-.landing-page>.coin-roadmap-modal {
-  order: 5;
 }
 
 .landing-page header {
@@ -551,7 +555,7 @@ nav a {
 }
 
 .api-intro {
-  order: 5;
+  order: 6;
   width: 100%;
   margin: 0 auto;
   padding: 18px 24px 42px;
@@ -579,7 +583,7 @@ nav a {
 }
 
 .interactive-container {
-  order: 6;
+  order: 7;
 }
 
 .hero-text .coin-roadmap-mark {
@@ -1556,8 +1560,7 @@ nav a {
 .coin-services {
   width: min(1160px, calc(100% - 48px));
   margin: 50px auto 0;
-  padding: 70px 0 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 40px 0 20px;
 }
 
 .coin-services-title {
@@ -1920,16 +1923,46 @@ body.light-mode .buy-button:hover,
 body:not(.dark-theme):not(.landing-body) .buy-button:hover {
   background: #0b6fa5;
 }
-body.light-mode .switch-btn.active,
-body:not(.dark-theme):not(.landing-body) .switch-btn.active {
-  color: #172033;
-  background: #dbeafe;
+body.light-mode .interactive-container {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(23, 32, 51, 0.12);
+  box-shadow: 0 20px 40px rgba(30, 64, 95, 0.08);
 }
 
-body.light-mode .faq-item,
-body.light-mode .benefits-list li {
+body.light-mode .mode-switch {
+  background: rgba(23, 32, 51, 0.05);
+  border-color: rgba(23, 32, 51, 0.1);
+}
+
+body.light-mode .switch-btn {
+  color: #52647c;
+}
+
+body.light-mode .switch-btn.active,
+body:not(.dark-theme):not(.landing-body) .switch-btn.active {
+  color: #075985;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+body.light-mode .faq-item {
   border-color: rgba(23, 32, 51, 0.1);
   background: rgba(255, 255, 255, 0.65);
+}
+
+body.light-mode .benefits-list li {
+  border-color: rgba(23, 32, 51, 0.1);
+  background: #ffffff;
+  color: #172033 !important;
+}
+
+body.light-mode .benefits-list li span:not(.benefit-icon) {
+  color: #172033 !important;
+}
+
+body.light-mode .benefit-icon {
+  background: #0284c7;
+  color: #ffffff;
 }
 
 body.light-mode .faq-question {
@@ -1945,7 +1978,6 @@ body:not(.dark-theme):not(.landing-body) .mini-code-box pre {
   color: #24527b;
 }
 
-body.light-mode .coin-services,
 body.light-mode .live-feed,
 body:not(.dark-theme):not(.landing-body) .live-feed {
   border-color: rgba(23, 32, 51, 0.12);
@@ -2140,3 +2172,298 @@ body.light-mode .footer-socials a {
     grid-column: auto;
   }
 }
+
+/* ==========================================================================
+   SECCIÓN COSTOS Y COMISIONES (#pricing)
+   ========================================================================== */
+.coin-costs {
+  width: min(1000px, calc(100% - 48px));
+  margin: 50px auto 0;
+  padding: 40px 0 20px;
+  font-family: var(--font-sans);
+}
+
+.coin-costs * {
+  font-family: var(--font-sans);
+}
+
+.coin-costs-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.coin-costs-header h2 {
+  font-size: clamp(28px, 4vw, 42px);
+  color: #9ad9ff;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.coin-costs-copy {
+  color: #94a3b8;
+  font-size: 15px;
+  max-width: 500px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* GRID DE TARJETAS */
+.coin-costs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.coin-cost-card {
+  padding: 28px;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  background-color: #111722;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coin-cost-card:hover {
+  border-color: #9ad9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(154, 217, 255, 0.08);
+}
+
+.cost-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0f172a;
+  background-color: #9ad9ff;
+  border: 1px solid #9ad9ff;
+  margin-bottom: 20px;
+}
+
+.cost-amount-wrapper {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cost-value {
+  font-size: 40px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.cost-value small {
+  font-size: 20px;
+  color: #9ad9ff;
+  font-weight: 700;
+}
+
+.cost-unit {
+  color: #64748b;
+  font-size: 13px;
+}
+
+.cost-desc {
+  color: #94a3b8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* CALCULADORA DE SIMULACIÓN */
+.cost-calc-container {
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  background-color: #0d121d;
+  padding: 28px;
+}
+
+.cost-calc-container h3 {
+  font-size: 18px;
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+
+.calc-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.calc-box {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 28px;
+  align-items: center;
+}
+
+.calc-input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.input-prefix-wrapper {
+  display: flex;
+  align-items: center;
+  background-color: #111722;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-prefix-wrapper:focus-within {
+  border-color: #9ad9ff;
+  box-shadow: 0 0 0 1px #9ad9ff;
+}
+
+.prefix {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 16px;
+  margin-right: 6px;
+}
+
+.input-prefix-wrapper input {
+  width: 100%;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  font-family: inherit;
+}
+
+.calc-results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  background-color: #111722;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+}
+
+.calc-res-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calc-res-item span {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.calc-res-item strong {
+  font-size: 15px;
+  color: #cbd5e1;
+}
+
+.calc-res-item.total-item strong {
+  color: #9ad9ff;
+  font-weight: 800;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .coin-costs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-box {
+    grid-template-columns: 1fr;
+  }
+
+  .calc-results-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* MODO CLARO (LIGHT-MODE) */
+body.light-mode .coin-costs-header h2 {
+  color: #075985;
+}
+
+body.light-mode .coin-costs-copy {
+  color: #52647c;
+}
+
+body.light-mode .coin-cost-card {
+  background: linear-gradient(145deg, #ffffff, #e8eef6);
+  border-color: rgba(23, 32, 51, 0.12);
+  box-shadow: 0 15px 40px rgba(30, 64, 95, 0.08);
+}
+
+body.light-mode .coin-cost-card:hover {
+  border-color: #0284c7;
+}
+
+body.light-mode .cost-tag {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+body.light-mode .cost-value {
+  color: #0f172a;
+}
+
+body.light-mode .cost-value small {
+  color: #0284c7;
+}
+
+body.light-mode .cost-unit {
+  color: #64748b;
+}
+
+body.light-mode .cost-desc {
+  color: #52647c;
+}
+
+body.light-mode .cost-calc-container {
+  background: linear-gradient(145deg, #ffffff, #e8eef6);
+  border-color: rgba(23, 32, 51, 0.12);
+  box-shadow: 0 15px 40px rgba(30, 64, 95, 0.08);
+}
+
+body.light-mode .cost-calc-container h3 {
+  color: #0f172a;
+}
+
+body.light-mode .calc-sub {
+  color: #52647c;
+}
+
+body.light-mode .input-prefix-wrapper {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.light-mode .input-prefix-wrapper input {
+  color: #0f172a;
+}
+
+body.light-mode .calc-results-grid {
+  background-color: #ffffff;
+  border-color: rgba(23, 32, 51, 0.1);
+}
+
+body.light-mode .calc-res-item strong {
+  color: #1e293b;
+}
+
+body.light-mode .calc-res-item.total-item strong {
+  color: #0284c7;
+}

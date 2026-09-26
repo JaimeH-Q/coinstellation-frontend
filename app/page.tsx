@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import Roadmap from "@/components/landing/Roadmap";
+import Costos from "@/components/landing/Costos";
 import Servicios from "@/components/landing/Servicios";
 import Footer from "@/components/landing/Footer";
 import ModalRegistro from "@/components/landing/ModalRegistro";
@@ -69,10 +70,13 @@ export default function PaginaInicio() {
       {/* 3. Roadmap / Pasos de Configuración */}
       <Roadmap />
 
-      {/* 4. Carrusel 3D de Servicios */}
+      {/* 4. Costos y Comisiones / Simulador */}
+      <Costos />
+
+      {/* 5. Carrusel 3D de Servicios */}
       <Servicios />
 
-      {/* 5. Pie de Página */}
+      {/* 6. Pie de Página */}
       <Footer />
 
       {/* 6. Modal de Registro */}
