@@ -116,6 +116,14 @@ body.light-mode .landing-page,
   box-shadow: 0 6px 18px var(--accent-glow);
 }
 
+.logo-image {
+  display: block;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  object-fit: contain;
+}
+
 nav ul {
   display: flex;
   gap: 2rem;

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface NavbarProps {
   esModoClaro: boolean;
@@ -81,7 +82,13 @@ export default function Navbar({
   return (
     <header>
       <div className="logo">
-        <div className="logo-icon">C</div>
+        <Image
+          className="logo-icon logo-image"
+          src="/coinstellation_logo_ai.png"
+          alt=""
+          width={32}
+          height={32}
+        />
         Coinstellation
       </div>
 
