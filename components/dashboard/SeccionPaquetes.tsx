@@ -6,6 +6,7 @@ import {
   type PackageCategoryDTO,
   type PackageDTO,
 } from "@/backend/packages/PackageTypes";
+import { copiarTexto } from "./copiarTexto";
 
 const IMAGEN_PAQUETE_DEFECTO =
   "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80";
@@ -66,6 +67,7 @@ export default function SeccionPaquetes() {
 
   // Alertas
   const [mensajeExito, setMensajeExito] = useState("");
+  const [idCopiado, setIdCopiado] = useState<string | null>(null);
   const [errorForm, setErrorForm] = useState("");
   const [errorCarga, setErrorCarga] = useState("");
 
@@ -107,6 +109,16 @@ export default function SeccionPaquetes() {
       document.removeEventListener("mousedown", manejarClickFuera);
     };
   }, []);
+
+  // Copia el ID del paquete (lo usan las tiendas como packageId al crear un pago)
+  const copiarIdPaquete = async (id: string) => {
+    if (await copiarTexto(id)) {
+      setIdCopiado(id);
+      setTimeout(() => setIdCopiado((actual) => (actual === id ? null : actual)), 2000);
+    } else {
+      setErrorCarga("No se pudo copiar el ID: selecciónalo y cópialo con Ctrl+C.");
+    }
+  };
 
   const mostrarExito = (mensaje: string) => {
     setMensajeExito(mensaje);
@@ -615,6 +627,27 @@ export default function SeccionPaquetes() {
                                 <i className="fa-solid fa-terminal text-[9px]"></i>
                                 {paq.commands?.length ?? 0} {paq.commands?.length === 1 ? "comando" : "comandos"}
                               </span>
+                            </div>
+
+                            {/* ID del paquete: es el packageId que usan las tiendas en /api/payments/create */}
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <code
+                                className="min-w-0 truncate text-[10px] font-mono text-[var(--text-muted)] select-all"
+                                title={paq.id}
+                              >
+                                ID: {paq.id}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() => copiarIdPaquete(paq.id)}
+                                className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-[3px] border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[10px] font-bold text-[var(--text-primary)] transition-colors cursor-pointer"
+                                title="Copiar el ID del paquete"
+                              >
+                                <i
+                                  className={`fa-solid ${idCopiado === paq.id ? "fa-check text-emerald-500" : "fa-copy"} text-[9px]`}
+                                ></i>
+                                {idCopiado === paq.id ? "Copiado" : "Copiar ID"}
+                              </button>
                             </div>
                           </div>
                         ))}
