@@ -1,3 +1,8 @@
+# Información para la Buildatón
+* Demo link: http://129.151.100.83:25571/
+* Webstore demo link: http://129.151.100.83:25579/
+* Minecraft server demo: 129.151.100.83:25578
+
 # Coinstellation Payments API
 
 Coinstellation permite que webstores externas creen cobros en Stellar mediante Cosmos Pay.
