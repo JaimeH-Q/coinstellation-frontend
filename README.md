@@ -2,6 +2,7 @@
 * Demo link: http://129.151.100.83:25571/
 * Webstore demo link: http://129.151.100.83:25579/
 * Minecraft server demo: 129.151.100.83:25578
+* Video demo: https://youtu.be/hXM5VXme3R0
 
 # Coinstellation Payments API
 
