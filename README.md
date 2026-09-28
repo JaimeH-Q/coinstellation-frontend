@@ -2,6 +2,10 @@
 
 Coinstellation permite que webstores externas creen cobros en Stellar mediante Cosmos Pay.
 
+## Enlaces
+
+- **Video Demo:** [Ver demo grabada en YouTube](https://youtu.be/hXM5VXme3R0)
+
 Este repositorio contiene la plataforma y su API hospedada. **Los integradores no necesitan clonar este frontend, instalar sus dependencias ni ejecutar el dashboard.** Para crear un pago solo deben llamar al endpoint público de creación desde el backend de su webstore.
 
 ## Flujo de integración
