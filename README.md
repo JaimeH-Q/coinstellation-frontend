@@ -5,13 +5,14 @@ Coinstellation permite que webstores externas creen cobros en Stellar mediante C
 ## 📌 Enlaces del Proyecto
 
 - 📺 **Video Demo:** [Ver demo grabada en YouTube](https://youtu.be/hXM5VXme3R0)
+- 📊 **Presentación (PowerPoint):** [`docs/Coinstellation_pitch_deck_v2.pptx`](docs/Coinstellation_pitch_deck_v2.pptx)
 - 📄 **Pitch (archivo de texto):** [`docs/pitch.txt`](docs/pitch.txt)
 
 ---
 
 ## 🎤 Pitch del Proyecto
 
-> Archivo fuente disponible en [`docs/pitch.txt`](docs/pitch.txt).
+> Archivos disponibles: Presentación en PowerPoint [`docs/Coinstellation_pitch_deck_v2.pptx`](docs/Coinstellation_pitch_deck_v2.pptx) y guion en [`docs/pitch.txt`](docs/pitch.txt).
 
 <details open>
 <summary><b>Haz clic para contraer o desplegar el Pitch completo</b></summary>
